@@ -5,12 +5,8 @@
 ### Use one repo instead of multiple repos
 Reason: faster delivery, easier to explain in interviews, less operational overhead for a portfolio project.
 
----
-
 ### Start with a single dev environment
 Reason: speed matters more than enterprise-grade environment separation for MVP.
-
----
 
 ## 2026-03-18
 
@@ -21,16 +17,12 @@ Reason: speed matters more than enterprise-grade environment separation for MVP.
 **Reason:**
 Bootstrap resources (S3 state bucket, DynamoDB lock table) are shared foundational infrastructure and not tied to a specific environment like dev or prod. Separating them improves clarity and reflects real-world structure.
 
----
-
 ### Use a single bootstrap stack for all environments
 
 **Decision:** Use one bootstrap stack for dev, stage, and prod.
 
 **Reason:**
 Backend resources are shared across environments, while state isolation is handled via different state keys. This avoids unnecessary duplication and keeps the setup simple and maintainable.
-
----
 
 ### Isolate Terraform state per environment
 
@@ -39,16 +31,12 @@ Backend resources are shared across environments, while state isolation is handl
 **Reason:**
 State isolation prevents environments from interfering with each other and reduces the risk of accidental changes or destruction across environments.
 
----
-
 ### Avoid dynamic backend configuration
 
 **Decision:** Keep backend configuration explicit per environment instead of trying to parameterize it.
 
 **Reason:**
 Terraform backend configuration is initialized separately from normal variables. Making it dynamic increases complexity and can lead to misconfiguration or accidental state overlap.
-
----
 
 ### Use local state first, then migrate to remote backend
 
@@ -57,16 +45,12 @@ Terraform backend configuration is initialized separately from normal variables.
 **Reason:**
 Backend resources must exist before they can be used. This avoids circular dependencies and follows Terraform’s initialization model.
 
----
-
 ### Use default_tags in provider configuration
 
 **Decision:** Apply tags globally via `default_tags` instead of per resource.
 
 **Reason:**
 Ensures consistent tagging across all resources and reflects platform engineering practices where governance is enforced automatically.
-
----
 
 ### Tag bootstrap resources without environment tag
 
@@ -75,16 +59,12 @@ Ensures consistent tagging across all resources and reflects platform engineerin
 **Reason:**
 Bootstrap resources are shared and not tied to a single environment. Environment tags are applied in environment-specific stacks.
 
----
-
 ### Parameterize project naming
 
 **Decision:** Use `project_name` variable for naming resources.
 
 **Reason:**
 Improves consistency, reusability, and makes it easier to adapt the configuration for other projects or environments.
-
----
 
 ### Protect critical backend resources
 
@@ -93,16 +73,12 @@ Improves consistency, reusability, and makes it easier to adapt the configuratio
 **Reason:**
 Accidental deletion of Terraform state or lock table can break infrastructure management. Protection is applied where the operational risk is highest.
 
----
-
 ### Do not over-engineer early (no modules yet)
 
 **Decision:** Avoid creating Terraform modules at the start.
 
 **Reason:**
 Abstraction too early leads to poor module design. It is better to understand actual usage patterns first, then extract reusable components.
-
----
 
 ### Use a monorepo structure
 
@@ -111,11 +87,43 @@ Abstraction too early leads to poor module design. It is better to understand ac
 **Reason:**
 Simplifies development, improves visibility, and is sufficient for a portfolio project while still reflecting real-world setups in smaller teams.
 
----
-
 ### Keep initial scope to a single environment (dev)
 
 **Decision:** Start with only a dev environment.
 
 **Reason:**
 Prioritizes speed and learning. Additional environments can be added later once the core platform is working.
+
+## 2026-03-19
+
+### Use two availability zones
+**Decision:** Deploy networking across two availability zones.
+
+**Reason:**  
+Provides a more realistic and resilient EKS-ready setup while keeping the architecture simple.
+
+### Use public and private subnets
+**Decision:** Place ingress-facing components in public subnets and worker nodes in private subnets.
+
+**Reason:**  
+This reflects common AWS and EKS networking practices and improves security posture.
+
+### Use a single NAT Gateway
+**Decision:** Use one NAT Gateway instead of one per availability zone.
+
+**Reason:**  
+This reduces cost and complexity for a portfolio environment while still supporting private subnet outbound access.
+
+### Prioritize deterministic infrastructure behavior
+
+**Decision:** Favor predictable, order-dependent constructs over more abstract or dynamic patterns.
+
+**Reason:**
+Deterministic infrastructure reduces unexpected changes in Terraform plans and simplifies debugging, which is especially important in early-stage or learning environments.
+
+### Prefer dynamic AZ selection over hardcoding
+
+**Decision:** Select availability zones dynamically using the AWS data source instead of hardcoding AZ names.
+
+**Reason:**
+Availability zone names are account-specific in AWS. Dynamic selection improves portability and avoids issues when deploying the same configuration across different accounts or regions.
