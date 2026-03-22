@@ -165,3 +165,39 @@ Because EKS, NAT Gateway, and worker nodes generate ongoing cost, regularly dest
 
 **Reason:**  
 Updating kubeconfig is a local workstation concern, not infrastructure state. Keeping it outside Terraform preserves cleaner separation between provisioning and operator workflow.
+
+
+
+
+
+## 2026-03-22
+
+### Use Service type LoadBalancer as the first exposure method
+**Decision:** Expose the first sample application with a Kubernetes Service of type `LoadBalancer`.
+
+**Reason:**  
+This is the simplest way to validate end-to-end integration between EKS, Kubernetes Services, AWS networking, and subnet tagging before introducing more advanced traffic management components.
+
+### Defer ingress architecture until after basic platform validation
+**Decision:** Do not start with Ingress or Gateway API for the first workload exposure.
+
+**Reason:**  
+Ingress and Gateway API require additional controllers, configuration, and debugging surface. For the initial platform milestone, the priority is proving that the cluster can run and expose workloads successfully with the fewest moving parts.
+
+### Clean up Kubernetes-created cloud resources before destroying infrastructure
+**Decision:** Delete Kubernetes Services and workloads before running `terraform destroy`.
+
+**Reason:**  
+Resources created indirectly by Kubernetes, such as AWS load balancers, are not tracked in Terraform state. Cleaning them up through Kubernetes first reduces the risk of orphaned cloud resources and unnecessary cost (added to the script).
+
+### Support frequent cluster recreation with local helper scripts
+**Decision:** Use local scripts to streamline reconnecting to recreated clusters.
+
+**Reason:**  
+Because the dev environment will be destroyed and recreated regularly for cost control, cluster access steps such as refreshing kubeconfig should be easy and repeatable.
+
+### Refresh kubeconfig after cluster recreation
+**Decision:** Re-run `aws eks update-kubeconfig` after recreating the EKS cluster.
+
+**Reason:**  
+Even when the cluster name remains the same, the endpoint and certificate data may change after recreation. Refreshing kubeconfig ensures `kubectl` points to the current cluster.

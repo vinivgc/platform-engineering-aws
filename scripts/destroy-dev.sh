@@ -24,16 +24,8 @@ fi
 
 cd "$TF_DIR"
 
-terraform fmt
-terraform validate
-terraform apply -auto-approve
+kubectl delete -f "$APP_DIR/service.yaml"
+kubectl delete -f "$APP_DIR/deployment.yaml"
+kubectl delete -f "$APP_DIR/namespace.yaml"
 
-aws eks update-kubeconfig \
-  --region eu-west-1 \
-  --name "platform-engineering-aws-${ENVIRONMENT}-eks"
-
-kubectl get nodes
-
-kubectl apply -f "$APP_DIR/namespace.yaml"
-kubectl apply -f "$APP_DIR/deployment.yaml"
-kubectl apply -f "$APP_DIR/service.yaml"
+terraform destroy -auto-approve
