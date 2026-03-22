@@ -22,3 +22,13 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
   description = "IDs of the private subnets"
 }
+
+output "cluster_name" {
+  value       = aws_eks_cluster.main.id
+  description = "Name of the EKS cluster"
+}
+
+output "cluster_endpoint" {
+  value       = aws_eks_cluster.main.endpoint
+  description = "Endpoint of the EKS cluster"
+}

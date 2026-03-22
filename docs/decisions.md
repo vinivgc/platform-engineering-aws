@@ -127,3 +127,41 @@ Deterministic infrastructure reduces unexpected changes in Terraform plans and s
 
 **Reason:**
 Availability zone names are account-specific in AWS. Dynamic selection improves portability and avoids issues when deploying the same configuration across different accounts or regions.
+
+## 2026-03-21
+
+### Use EKS as a managed control plane boundary
+**Decision:** Treat the Kubernetes control plane as an AWS-managed service boundary rather than something to customize directly.
+
+**Reason:**  
+In EKS, low-level control plane concerns such as etcd topology, static pod management, and control plane component configuration are intentionally abstracted away. The platform design should therefore focus on cluster consumption, workload management, networking, access, and automation rather than self-managed control plane administration.
+
+### Prefer node-based EKS over Fargate for the initial platform design
+**Decision:** Start with EC2-backed managed node groups instead of EKS Fargate.
+
+**Reason:**  
+Node groups expose more of the infrastructure and Kubernetes operational model, including worker capacity, daemonset compatibility, scaling tradeoffs, and node placement. This makes the project stronger for learning and for interviews focused on Cloud, DevOps, or Platform Engineering roles.
+
+### Separate Kubernetes workload scaling from infrastructure capacity scaling
+**Decision:** Treat pod scaling and node scaling as separate concerns in the platform design.
+
+**Reason:**  
+Kubernetes workload scaling is handled through Kubernetes resources such as replica counts and Horizontal Pod Autoscaler, while infrastructure capacity is bounded by node group scaling settings. Keeping these concerns separate makes the platform easier to reason about and scale safely.
+
+### Do not rely on Terraform for local operator access workflows
+**Decision:** Keep kubeconfig refresh and local cluster access outside Terraform, using helper scripts instead.
+
+**Reason:**  
+Provisioning infrastructure and configuring a developer workstation are different concerns. This separation avoids mixing infrastructure state with local execution behavior and results in a cleaner operating model.
+
+### Expect ephemeral environment recreation as part of cost control
+**Decision:** Design the platform workflow to support frequent destroy-and-recreate cycles in the dev environment.
+
+**Reason:**  
+Because EKS, NAT Gateway, and worker nodes generate ongoing cost, regularly destroying the environment is a practical cost-control strategy for a portfolio project. This makes repeatable provisioning and reconnection workflows important design considerations.
+
+### Use local helper scripts for cluster access
+**Decision:** Use shell scripts to refresh kubeconfig after recreating the EKS cluster instead of embedding local commands in Terraform.
+
+**Reason:**  
+Updating kubeconfig is a local workstation concern, not infrastructure state. Keeping it outside Terraform preserves cleaner separation between provisioning and operator workflow.
