@@ -197,3 +197,37 @@ Because the dev environment will be destroyed and recreated regularly for cost c
 
 **Reason:**  
 Even when the cluster name remains the same, the endpoint and certificate data may change after recreation. Refreshing kubeconfig ensures `kubectl` points to the current cluster.
+
+## 2026-03-23
+
+### Use GitHub OIDC for AWS authentication
+
+**Decision:** Authenticate GitHub Actions to AWS using OIDC and an assumable IAM role instead of static access keys.
+
+**Reason:**
+This avoids storing long-lived AWS credentials in GitHub and uses temporary credentials, which is the recommended security model for CI/CD pipelines.
+
+### Restrict GitHub Actions trust policy to repository and branch
+
+**Decision:** Limit the IAM role trust relationship to the specific repository and 'main' branch.
+
+**Reason:**
+This enforces least privilege and ensures only authorized workflows from the intended repository and branch can assume the role.
+
+### Manage CI/CD cloud access as infrastructure
+
+**Decision:** Define the GitHub OIDC provider and IAM role using Terraform.
+
+**Reason:**
+These are AWS infrastructure components and should be managed as code for repeatability, auditability, and consistency.
+
+### Separate CI/CD access from environment infrastructure
+
+**Decision:** Place GitHub Actions IAM configuration in a dedicated Terraform stack ('platform-access/') instead of inside environment stacks.
+
+**Reason:**
+CI/CD identity is shared platform access infrastructure, not tied to a specific environment like dev or prod.
+
+### Use remote state for all Terraform stacks
+
+**Decision:** Configure remote state for platform-access Terraform stacks in addition to environment stacks
