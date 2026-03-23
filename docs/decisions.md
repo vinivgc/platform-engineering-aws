@@ -166,10 +166,6 @@ Because EKS, NAT Gateway, and worker nodes generate ongoing cost, regularly dest
 **Reason:**  
 Updating kubeconfig is a local workstation concern, not infrastructure state. Keeping it outside Terraform preserves cleaner separation between provisioning and operator workflow.
 
-
-
-
-
 ## 2026-03-22
 
 ### Use Service type LoadBalancer as the first exposure method
