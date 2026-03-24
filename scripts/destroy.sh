@@ -7,10 +7,16 @@ source "$SCRIPT_DIR/common.sh"
 
 validate_environment "${1:-dev}"
 
+# kubectl delete -f "$APP_DIR/service.yaml"
+# kubectl delete -f "$APP_DIR/deployment.yaml"
+# kubectl delete -f "$APP_DIR/namespace.yaml"
+
+cd "$TF_PLA_ACC_DIR"
+
+terraform init
+terraform destroy -auto-approve
+
 cd "$TF_DIR"
 
-kubectl delete -f "$APP_DIR/service.yaml"
-kubectl delete -f "$APP_DIR/deployment.yaml"
-kubectl delete -f "$APP_DIR/namespace.yaml"
-
+terraform init
 terraform destroy -auto-approve

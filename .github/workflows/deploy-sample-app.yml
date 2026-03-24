@@ -1,0 +1,58 @@
+name: Deploy to EKS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/sample-app/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig \
+            --name "$EKS_CLUSTER_NAME" \
+            --region "$AWS_REGION"
+
+      - name: Verify cluster access
+        run: kubectl get nodes
+
+      - name: Deploy namespace
+        run: kubectl apply -f apps/sample-app/namespace.yaml
+
+      - name: Deploy deployment
+        run: kubectl apply -f apps/sample-app/deployment.yaml
+
+      - name: Deploy service
+        run: kubectl apply -f apps/sample-app/service.yaml
+
+      - name: Verify deployed resources
+        run: |
+          kubectl get all -n sample-app
