@@ -231,3 +231,162 @@ CI/CD identity is shared platform access infrastructure, not tied to a specific 
 ### Use remote state for all Terraform stacks
 
 **Decision:** Configure remote state for platform-access Terraform stacks in addition to environment stacks
+
+## 2026-03-24
+
+### Define CI/CD scope for application deployment only
+**Decision:** Limit Phase 5 to application deployment via GitHub Actions, excluding infrastructure provisioning.
+**Reason:** Establishing a working deployment pipeline to EKS is the immediate goal. Infrastructure automation via CI/CD introduces additional complexity and is intentionally deferred to a later phase.
+
+### Use OIDC for GitHub Actions authentication
+**Decision:** Authenticate GitHub Actions to AWS using OIDC instead of static access keys.
+**Reason:** OIDC provides short-lived credentials, improves security, and aligns with modern production practices by eliminating long-lived secrets.
+
+### Restrict IAM role trust to repository and branch
+**Decision:** Limit the IAM role trust policy to a specific GitHub repository and branch.
+**Reason:** Prevents unauthorized role assumption and enforces least privilege at the identity level.
+
+### Grant minimal AWS permissions to GitHub Actions role
+**Decision:** Assign only `eks:DescribeCluster` permission to the GitHub Actions IAM role.
+**Reason:** This is the minimum required for generating kubeconfig. Kubernetes-level access is handled separately via EKS access entries.
+
+### Use EKS access entries for Kubernetes authorization
+**Decision:** Manage Kubernetes API access using `aws_eks_access_entry` and `aws_eks_access_policy_association`.
+**Reason:** This is the modern and recommended way to grant IAM identities access to EKS, replacing direct aws-auth ConfigMap management.
+
+### Grant cluster-admin access for initial CI/CD setup
+**Decision:** Assign `AmazonEKSClusterAdminPolicy` to the GitHub Actions role at cluster scope.
+**Reason:** Broad access ensures reliability during initial setup and reduces friction. It will be restricted in a later hardening phase.
+
+### Manage CI/CD access in a dedicated Terraform stack
+**Decision:** Keep GitHub Actions IAM, OIDC provider, and EKS access configuration in the `platform-access/github-actions` stack.
+**Reason:** CI/CD access is shared platform infrastructure and should remain separate from environment-specific resources.
+
+### Pass EKS cluster name as variable between stacks
+**Decision:** Provide the EKS cluster name to the `platform-access` stack via a variable.
+**Reason:** Avoids early complexity with remote state wiring and keeps stacks loosely coupled. Can be refactored later.
+
+### Structure Terraform state keys by stack path
+**Decision:** Organize S3 backend keys to reflect repository structure (e.g. `platform-access/github-actions/terraform.tfstate`).
+**Reason:** Improves clarity, scalability, and maintainability as more stacks are added.
+
+### Use a single generic deployment workflow
+**Decision:** Name the GitHub Actions workflow `deploy.yml`.
+**Reason:** Keeps the workflow reusable and avoids tight coupling to a specific application.
+
+### Store workflow in standard GitHub directory
+**Decision:** Place the workflow in `.github/workflows/`.
+**Reason:** This is the required and standard location for GitHub Actions workflows.
+
+### Use ubuntu-latest for GitHub runner
+**Decision:** Use `runs-on: ubuntu-latest`.
+**Reason:** Standard practice with low maintenance overhead. Version pinning can be introduced later if needed.
+
+### Limit GitHub Actions permissions
+**Decision:** Set workflow permissions to `id-token: write` and `contents: read`.
+**Reason:** Enables OIDC authentication while following least privilege principles.
+
+### Store Kubernetes manifests with the application
+**Decision:** Keep Kubernetes manifests in `apps/sample-app/`.
+**Reason:** Keeps application code and deployment configuration together and avoids unnecessary structure early on.
+
+### Keep CI/CD implementation simple for initial phase
+**Decision:** Avoid introducing Helm, Kustomize, or multi-environment overlays at this stage.
+**Reason:** Focus is on delivering a working pipeline quickly. Additional abstraction will be introduced when complexity increases.
+
+### Defer infrastructure automation in CI/CD
+**Decision:** Do not implement Terraform execution via GitHub Actions yet.
+**Reason:** Separating concerns allows focusing on application delivery first. Infrastructure automation will be added in the next phase.
+
+## 2026-03-25
+
+### Separate CI (build) from CD (deployment)
+
+**Decision:** Implement CI and CD as two separate GitHub Actions workflows instead of combining them into a single pipeline.
+
+**Reason:**
+CI and CD have different responsibilities. CI builds and publishes artifacts, while CD deploys them. Separating them improves clarity, aligns with professional practices, and allows independent control over build and deployment processes.
+
+### Trigger CI on push to main and pull requests
+
+**Decision:** Configure the CI workflow to run on pull requests targeting `main` and on pushes to `main`.
+
+**Reason:**
+Pull request runs validate that code builds correctly before merge, while push events to `main` produce the official deployable artifact. This ensures only approved code is published.
+
+### Build images on PR, push images only from main
+
+**Decision:** Build Docker images during pull request workflows but only push images to ECR on pushes to `main`.
+
+**Reason:**
+PR builds validate changes without polluting ECR with temporary artifacts. Only stable, reviewed code from `main` produces published images, keeping the registry clean and meaningful.
+
+### Use commit SHA as the primary image tag
+
+**Decision:** Tag Docker images using `sha-<short_commit_sha>`.
+
+**Reason:**
+Commit SHA tags provide full traceability between an image and the exact source code version. They are immutable and ideal for reproducible deployments.
+
+### Use 'latest' tag only for main branch builds
+
+**Decision:** Apply the `latest` tag only when building from the `main` branch.
+
+**Reason:**
+The `latest` tag is a moving pointer and should represent the most recent approved version. Restricting it to `main` prevents unstable or unreviewed code from being marked as the latest version.
+
+### Use GitHub OIDC for AWS authentication
+
+**Decision:** Authenticate GitHub Actions to AWS using OpenID Connect (OIDC) instead of static credentials.
+
+**Reason:**
+OIDC provides short-lived, secure credentials without storing secrets in GitHub. This is the modern and recommended approach for CI/CD authentication.
+
+### Use a single ECR repository per application
+
+**Decision:** Use one ECR repository per application (e.g., `sample-app`) instead of separate repositories per environment.
+
+**Reason:**
+Images should be built once and promoted across environments using tags. This avoids rebuilding the same artifact and aligns with best practices for artifact immutability.
+
+### Build Docker images from application-specific directories
+
+**Decision:** Use `apps/sample-app/` as the Docker build context for the CI pipeline.
+
+**Reason:**
+This maintains clear separation between application code and infrastructure code, improving repository organization and scalability.
+
+### Keep CI focused on build and publish only
+
+**Decision:** Ensure the CI workflow only builds and pushes Docker images, without provisioning infrastructure.
+
+**Reason:**
+Infrastructure provisioning belongs to Terraform. Keeping CI focused on application artifacts ensures clean separation of concerns and aligns with platform engineering principles.
+
+### Use image tags as the contract between CI and CD
+
+**Decision:** Use the image tag (e.g., `sha-<commit>`) in ECR as the interface between CI and CD.
+
+**Reason:**
+CI produces versioned images, and CD consumes them. This decouples build and deployment and allows precise, reproducible deployments.
+
+### Avoid premature generalization of CI workflows
+
+**Decision:** Implement an application-specific CI workflow (e.g., `ci-sample-app.yml`) instead of a generic multi-app pipeline.
+
+**Reason:**
+With only one application, explicit and simple workflows improve clarity. Generalization should only be introduced when multiple applications require reuse.
+
+### Use PR workflow runs for build validation
+
+**Decision:** Use pull request-triggered workflows to validate that the application builds successfully before merging.
+
+**Reason:**
+Ensures code quality and prevents broken builds from reaching the main branch, without publishing unnecessary artifacts.
+
+### Treat 'latest' as a convenience, not a source of truth
+
+**Decision:** Do not rely on the `latest` tag for deployment decisions.
+
+**Reason:**
+The `latest` tag is mutable and can change over time. Immutable SHA tags provide a reliable and reproducible deployment reference.
