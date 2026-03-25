@@ -20,6 +20,7 @@ permissions:
 
 env:
   AWS_REGION: eu-west-1
+  AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
   ECR_REPOSITORY: platform-engineering-aws-ecr
   APP_PATH: apps/sample-app
 
@@ -39,7 +40,7 @@ jobs:
         if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::123456789012:role/github-actions-ecr-push-role
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
