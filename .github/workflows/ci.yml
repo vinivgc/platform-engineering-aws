@@ -1,0 +1,80 @@
+name: CI - Build and Push Sample App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/sample-app/**'
+      - '.github/workflows/ci-sample-app.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/sample-app/**'
+      - '.github/workflows/ci-sample-app.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPOSITORY: platform-engineering-aws-ecr
+  APP_PATH: apps/sample-app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: vars
+        run: echo "IMAGE_TAG=sha-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions-ecr-push-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t $ECR_REPOSITORY:$IMAGE_TAG \
+            $APP_PATH
+
+      - name: Tag Docker image for ECR
+        if: github.event_name == 'push'
+        run: |
+          docker tag \
+            $ECR_REPOSITORY:$IMAGE_TAG \
+            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Push Docker image to ECR
+        if: github.event_name == 'push'
+        run: |
+          docker push \
+            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Tag as latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag \
+            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG \
+            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+
+      - name: Push latest tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push \
+            ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest

@@ -16,7 +16,7 @@ cd "$TF_PLA_ACC_DIR"
 terraform init
 terraform destroy -auto-approve
 
-cd "$TF_DIR"
+cd "$TF_ENV_DIR"
 
 terraform init
 terraform destroy -auto-approve
