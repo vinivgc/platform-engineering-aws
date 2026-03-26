@@ -12,7 +12,7 @@ application:
   healthPath: /health
 
 exposure:
-  type: internal
+  type: public
 
 workloadProfile: general
 
