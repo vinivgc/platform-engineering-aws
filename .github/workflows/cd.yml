@@ -1,0 +1,64 @@
+name: CD - Deploy Sample App
+
+on:
+  workflow_run:
+    workflows:
+      - CI - Build and Push
+    types:
+      - completed
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
+  EKS_CLUSTER_NAME: platform-engineering-aws-eks
+  K8S_NAMESPACE: prod
+  RELEASE_NAME: sample-app
+  CHART_PATH: k8s/charts/sample-app
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set image tag
+        run: echo "IMAGE_TAG=sha-$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install $RELEASE_NAME $CHART_PATH \
+            --namespace $K8S_NAMESPACE \
+            --create-namespace \
+            --set image.tag=$IMAGE_TAG \
+            --set env[0].name=APP_ENV \
+            --set env[0].value=prod
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/$RELEASE_NAME -n $K8S_NAMESPACE --timeout=180s
+          kubectl get pods -n $K8S_NAMESPACE
+          kubectl get svc -n $K8S_NAMESPACE
