@@ -14,7 +14,7 @@ permissions:
 env:
   AWS_REGION: eu-west-1
   AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
-  EKS_CLUSTER_NAME: platform-engineering-aws-eks
+  EKS_CLUSTER_NAME: platform-engineering-aws-dev-eks
   K8S_NAMESPACE: prod
   RELEASE_NAME: sample-app
   CHART_PATH: k8s/charts/sample-app
