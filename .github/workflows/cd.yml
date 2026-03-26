@@ -1,4 +1,4 @@
-name: CD - Deploy Sample App
+name: CD - Deploy
 
 on:
   workflow_run:
