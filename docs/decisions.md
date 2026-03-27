@@ -391,6 +391,8 @@ Ensures code quality and prevents broken builds from reaching the main branch, w
 **Reason:**
 The `latest` tag is mutable and can change over time. Immutable SHA tags provide a reliable and reproducible deployment reference.
 
+## 2026-03-27
+
 ### Use Helm as the Kubernetes deployment layer
 
 **Decision:** Use Helm instead of raw Kubernetes manifests as the standardized deployment mechanism for the sample application.
