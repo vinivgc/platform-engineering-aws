@@ -26,8 +26,9 @@
           ▼
 ┌──────────────────────────────┐
 │        CD Pipeline           │
-│ (GitHub Actions - CD)        │
+│ (GitHub Actions - CD Dev)    │
 │                              │
+│ - Triggered on push          │
 │ - Assume AWS role (OIDC)     │
 │ - Connect to EKS             │
 │ - Run Helm deploy            │
@@ -38,10 +39,10 @@
 │           Helm               │
 │ (Deployment Template)        │
 │                              │
-│ - Deployment                │
-│ - Service                   │
-│ - Probes                    │
-│ - Abstractions              │
+│ - Deployment                 │
+│ - Service                    │
+│ - Probes                     │
+│ - Abstractions               │
 └─────────┬────────────────────┘
           │
           ▼
@@ -57,6 +58,53 @@
           ▼
 ┌──────────────────────────────┐
 │        AWS LoadBalancer      │
+│ (if external)                │
+│                              │
+│ Public Endpoint              │
+└─────────┬────────────────────┘
+          │
+          ▼
+┌──────────────────────────────┐
+│          End User            │
+│  http://<elb-url>            │
+└──────────────────────────────┘
+          │
+          ▼
+┌──────────────────────────────┐
+│        CD Pipeline           │
+│ (GitHub Actions - CD Prod)   │
+│                              │
+│ - Triggered manually         │
+│ - Assume AWS role (OIDC)     │
+│ - Connect to EKS             │
+│ - Run Helm deploy            │
+└─────────┬────────────────────┘
+          │
+          ▼
+┌──────────────────────────────┐
+│           Helm               │
+│ (Deployment Template)        │
+│                              │
+│ - Deployment                 │
+│ - Service                    │
+│ - Probes                     │
+│ - Abstractions               │
+└─────────┬────────────────────┘
+          │
+          ▼
+┌──────────────────────────────┐
+│        Kubernetes (EKS)      │
+│                              │
+│ Namespace: prod              │
+│                              │
+│ Pods (Flask app)             │
+│ Service (LoadBalancer)       │
+└─────────┬────────────────────┘
+          │
+          ▼
+┌──────────────────────────────┐
+│        AWS LoadBalancer      │
+│ (if external)                │
 │                              │
 │ Public Endpoint              │
 └─────────┬────────────────────┘

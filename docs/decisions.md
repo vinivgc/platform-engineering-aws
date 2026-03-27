@@ -616,3 +616,318 @@ A working end-to-end implementation is more valuable for project completion than
 
 **Reason:**
 The project already demonstrates the key platform concepts with one environment. Deferring multi-environment support helps maintain momentum and avoids overextending the scope before completion.
+
+### Use Helm as the standardized Kubernetes deployment layer
+
+**Decision:** Use Helm instead of raw Kubernetes manifests as the deployment mechanism for the sample application.
+
+**Reason:**
+Helm provides templating, reuse, and parameterization, which better reflects a platform engineering approach than maintaining one-off YAML files.
+
+### Replace raw Kubernetes test manifests with a reusable Helm chart
+
+**Decision:** Replace the initial nginx-based test manifests with a reusable Helm chart for the sample application.
+
+**Reason:**
+The original manifests were only useful for validating EKS connectivity. A Helm chart better represents a real application deployment model and a reusable platform interface.
+
+### Keep Terraform, CI, Helm, and CD as separate layers
+
+**Decision:** Separate infrastructure provisioning, image build, deployment definition, and deployment execution into distinct layers.
+
+**Reason:**
+Terraform provisions infrastructure, CI builds and pushes images, Helm defines how the application runs in Kubernetes, and CD performs deployment. This separation improves clarity, maintainability, and architectural storytelling.
+
+### Use `helm upgrade --install` as the standard deployment command
+
+**Decision:** Use `helm upgrade --install` as the deployment command for the application.
+
+**Reason:**
+This makes deployments idempotent by installing the release if it does not exist and upgrading it if it does, which is appropriate for both manual validation and automated CD.
+
+### Use the namespace as the environment boundary
+
+**Decision:** Use Kubernetes namespaces such as `dev` and `prod` to represent environments.
+
+**Reason:**
+This keeps the chart environment-agnostic, supports reuse across environments, and aligns with standard Kubernetes deployment practices.
+
+### Remove namespace management from the Helm chart
+
+**Decision:** Do not create namespaces inside the Helm chart and instead manage the target namespace through Helm CLI flags.
+
+**Reason:**
+Namespace selection belongs to deployment context, not application definition. This keeps the chart reusable and avoids conflicts between chart templates and deployment commands.
+
+### Use a single reusable Helm chart per application
+
+**Decision:** Keep one Helm chart for the application rather than creating separate charts per environment.
+
+**Reason:**
+Deployment logic should be standardized and reused. Environment differences should be handled through values files or deployment inputs, not duplicated charts.
+
+### Keep shared defaults in `values.yaml` and override only what changes
+
+**Decision:** Use `values.yaml` for shared defaults and override only environment-specific or deployment-specific values.
+
+**Reason:**
+This keeps the base chart clean and avoids unnecessary duplication while allowing each environment to change only what it needs.
+
+### Separate environment-specific values from the chart directory
+
+**Decision:** Store environment-specific values files outside the Helm chart directory, for example under `k8s/values/sample-app/`.
+
+**Reason:**
+This separates deployment templates from environment configuration, keeps the chart reusable, and scales more cleanly as additional environments are added.
+
+### Use environment-specific values files for dev and prod
+
+**Decision:** Split configuration into environment-specific values files such as `dev.yaml` and `prod.yaml`.
+
+**Reason:**
+This makes environment differences explicit, keeps the chart reusable, and avoids long and hard-to-maintain chains of CLI overrides.
+
+### Use pipeline overrides only for dynamic deployment-time values
+
+**Decision:** Override only dynamic values such as the image tag from the deployment workflow.
+
+**Reason:**
+Static environment configuration should live in version-controlled values files, while runtime-specific values like the image version should be injected by the pipeline.
+
+### Keep application environment variables in Helm values instead of CD overrides
+
+**Decision:** Define application environment variables in Helm values rather than passing them through CD commands.
+
+**Reason:**
+These are part of deployment configuration, not dynamic runtime metadata. Keeping them in chart values improves separation of concerns and avoids unnecessary pipeline complexity.
+
+### Use developer-friendly abstractions instead of exposing raw Kubernetes fields
+
+**Decision:** Expose a small, platform-friendly configuration interface instead of low-level Kubernetes fields such as `nodeSelector`, `tolerations`, or `affinity`.
+
+**Reason:**
+Developers should express intent, not infrastructure internals. The platform should hide scheduling and infrastructure complexity behind safer abstractions.
+
+### Abstract service exposure behind a simple platform input
+
+**Decision:** Expose service accessibility through a simple setting such as `exposure.type: internal|public`.
+
+**Reason:**
+This hides raw Kubernetes service types from developers while allowing the platform to translate application intent into the correct Service behavior.
+
+### Abstract resource behavior behind workload profiles
+
+**Decision:** Use a simplified `workloadProfile` input such as `general`, `important`, or `critical`.
+
+**Reason:**
+This demonstrates platform abstraction by allowing the platform to map intent to resource defaults and future scheduling behavior without exposing raw Kubernetes resource configuration directly.
+
+### Keep low-level Kubernetes scheduling settings platform-owned
+
+**Decision:** Do not expose low-level scheduling settings such as `nodeSelector`, `tolerations`, or `affinity` to developers.
+
+**Reason:**
+These are platform concerns, not application concerns. Hiding them reduces developer cognitive load and preserves platform control.
+
+### Use rolling updates in the Deployment strategy
+
+**Decision:** Configure the Kubernetes Deployment to use a rolling update strategy.
+
+**Reason:**
+Rolling updates are a production-style default that support safer releases and minimize service disruption during application updates.
+
+### Add readiness and liveness probes based on `/health`
+
+**Decision:** Configure both readiness and liveness probes using the application’s `/health` endpoint.
+
+**Reason:**
+Health probes are required for reliable Kubernetes operations. They ensure traffic is sent only to healthy Pods and allow Kubernetes to recover unhealthy containers.
+
+### Use numeric probe ports instead of named ports
+
+**Decision:** Configure readiness and liveness probes to use the numeric application port rather than a named container port reference.
+
+**Reason:**
+This avoids failures caused by named port resolution issues and keeps the probe configuration simpler and more robust for the current project.
+
+### Align the application, container, and Kubernetes configuration on port `5000`
+
+**Decision:** Standardize the Python application, Docker image, and Helm chart around port `5000`.
+
+**Reason:**
+The Flask application listens on port `5000`, so the container and Kubernetes configuration should match that value exactly to avoid connectivity and probe failures.
+
+### Expose the application on `0.0.0.0` inside the container
+
+**Decision:** Configure the Python application to listen on `0.0.0.0` instead of `127.0.0.1`.
+
+**Reason:**
+Applications running in containers must bind to all interfaces to be reachable through Kubernetes networking and Services.
+
+### Add a dedicated `/health` endpoint to the application
+
+**Decision:** Add a `/health` endpoint to the Flask application for Kubernetes probes.
+
+**Reason:**
+A dedicated health endpoint is more reliable than probing the root path and makes health checking explicit and predictable.
+
+### Use a Service port of `80` and forward to container port `5000`
+
+**Decision:** Expose the Kubernetes Service on port `80` and forward traffic to the application container port `5000`.
+
+**Reason:**
+This creates a cleaner external interface while allowing the application to keep its internal runtime port unchanged.
+
+### Use a LoadBalancer service in dev for external access
+
+**Decision:** Use a `LoadBalancer` Service when external browser access is needed in the `dev` environment.
+
+**Reason:**
+This is the simplest way to make the application reachable externally during the current project stage without introducing an Ingress controller yet.
+
+### Use immutable image tags based on commit SHA for deployments
+
+**Decision:** Deploy images using immutable commit-based tags in the format `sha-<short-commit>`.
+
+**Reason:**
+Immutable tags improve traceability, reproducibility, and rollback safety compared to mutable tags such as `latest`.
+
+### Keep `latest` only as a convenience tag
+
+**Decision:** Allow CI to continue publishing `latest` as a convenience tag, but use only SHA-based tags for deployments.
+
+**Reason:**
+`latest` can be useful for quick manual reference, but it should not be used in the deployment path because it is mutable and not traceable.
+
+### Keep the current CI pipeline and optimize later
+
+**Decision:** Keep the current working CI design unchanged instead of refactoring it prematurely.
+
+**Reason:**
+The existing CI pipeline already supports the required build-and-push flow. Prioritizing forward progress over unnecessary optimization keeps the project moving.
+
+### Separate CI and CD into different GitHub Actions workflows
+
+**Decision:** Use one GitHub Actions workflow for CI and a separate workflow for CD.
+
+**Reason:**
+Build and deployment are distinct responsibilities. Separating them keeps the workflows simpler and more aligned with real-world delivery pipelines.
+
+### Trigger dev CD only after successful CI on a push to `main`
+
+**Decision:** Trigger the development deployment workflow only after the CI workflow completes successfully for a push to `main`.
+
+**Reason:**
+This ensures that only validated changes merged into the main branch are deployed, while avoiding deployments from pull request builds.
+
+### Use `workflow_run` to trigger CD from CI
+
+**Decision:** Trigger the dev CD workflow using the GitHub Actions `workflow_run` event on successful CI completion.
+
+**Reason:**
+This creates an explicit dependency between build success and deployment while keeping CI and CD in separate workflow files.
+
+### Recreate the image tag in CD from the same commit validated by CI
+
+**Decision:** Recompute the image tag in CD from the same commit SHA used by the triggering CI run.
+
+**Reason:**
+Because CI and CD are separate workflows, CD still needs a reliable way to identify the exact image artifact to deploy.
+
+### Deploy the exact commit validated by CI to dev
+
+**Decision:** Configure dev CD to deploy the exact commit that triggered the CI run.
+
+**Reason:**
+This avoids drift between the version built by CI and the version deployed by CD, improving traceability and consistency.
+
+### Use `head_sha` from the triggering workflow in dev CD
+
+**Decision:** Use `workflow_run.head_sha` to identify the exact commit that CI validated and dev CD should deploy.
+
+**Reason:**
+This ensures dev CD uses the same source revision that CI built and tested, even if newer commits land on `main` before deployment begins.
+
+### Check out the repository at the exact commit used by CI in dev CD
+
+**Decision:** Configure the dev CD workflow to check out the repository at the specific commit SHA associated with the triggering CI run.
+
+**Reason:**
+This guarantees that the deployed chart and repository state match the same commit used to build the image.
+
+### Treat workflows as versioned code tied to commits
+
+**Decision:** Apply workflow changes through new commits and pushes instead of relying on re-running older workflow runs.
+
+**Reason:**
+GitHub Actions re-runs use the workflow definition from the original commit. Treating workflows as versioned code avoids confusion and ensures changes take effect predictably.
+
+### Use the same GitHub Actions IAM role for ECR and EKS access
+
+**Decision:** Use the GitHub Actions IAM role both for pushing images to ECR and for deploying to EKS.
+
+**Reason:**
+The pipeline needs access to both the image registry and the cluster. Reusing the same role keeps authentication simpler for this project.
+
+### Grant the GitHub Actions role both AWS IAM permissions and EKS cluster access
+
+**Decision:** Configure the GitHub Actions role with both AWS API permissions, such as `eks:DescribeCluster`, and access inside the EKS cluster.
+
+**Reason:**
+Successful deployment requires both layers: AWS IAM permissions to interact with EKS APIs and in-cluster authorization to run Helm and kubectl operations.
+
+### Align CD cluster configuration with the actual provisioned EKS cluster name
+
+**Decision:** Configure the deployment workflows to target the exact EKS cluster name provisioned by Terraform.
+
+**Reason:**
+A mismatch between the cluster name in IAM/Terraform and the workflow causes authorization failures even when permissions are otherwise correct.
+
+### Validate the Helm deployment manually before automating it
+
+**Decision:** Validate the Helm deployment manually from the local machine before relying fully on CD.
+
+**Reason:**
+This confirms that the chart, image, service, and probes work correctly before debugging them through the added complexity of pipeline automation.
+
+### Treat manual Helm deployment as a validation step, not the final operating model
+
+**Decision:** Use manual Helm deployment only as an intermediate validation step while building the platform.
+
+**Reason:**
+The purpose of the manual step is to verify the deployment layer. The intended final state remains automated deployment through CD workflows.
+
+### Use a single shared `dev` namespace for the current project scope
+
+**Decision:** Use one shared `dev` namespace for automatic development deployments instead of implementing per-developer namespaces now.
+
+**Reason:**
+A shared `dev` namespace keeps the project simpler and is sufficient for demonstrating the end-to-end platform flow. Per-developer namespaces are a valid future enhancement but add unnecessary complexity for the current scope.
+
+### Use manual promotion for production deployments
+
+**Decision:** Deploy to `dev` automatically after successful CI on `main`, but promote to `prod` through a manually triggered GitHub Actions workflow using a selected immutable image tag.
+
+**Reason:**
+This keeps development fast while maintaining control over production releases. It also ensures the same built artifact is promoted across environments instead of being rebuilt, improving traceability and consistency.
+
+### Use image-tag-based manual promotion for prod
+
+**Decision:** Implement the manual production workflow so that the user selects an existing immutable image tag rather than rebuilding the application for production.
+
+**Reason:**
+This follows the “build once, promote many” model, where CI creates deployable artifacts and promotion chooses which tested artifact moves forward.
+
+### Keep prod workflow inputs minimal and platform-owned
+
+**Decision:** Limit the manual production deployment workflow input to the image tag and keep namespace, release name, chart path, and deployment details fixed in the workflow.
+
+**Reason:**
+This exposes a simple self-service interface while ensuring that platform-owned deployment details remain standardized and controlled.
+
+### Use plain checkout in the manual prod workflow instead of checking out by image tag
+
+**Decision:** Do not use the selected Docker image tag as the checkout ref in the manual production workflow.
+
+**Reason:**
+The image tag is an ECR artifact identifier, not a Git ref. `actions/checkout` expects a branch, tag, or commit from the repository, so using the image tag there would be incorrect.
