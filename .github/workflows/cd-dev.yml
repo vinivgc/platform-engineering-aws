@@ -53,7 +53,7 @@ jobs:
           helm upgrade --install $RELEASE_NAME $CHART_PATH \
             --namespace $K8S_NAMESPACE \
             --create-namespace \
-            -f k8s/values/sample-app/prod.yaml \
+            -f k8s/values/sample-app/dev.yaml \
             --set image.tag=$IMAGE_TAG \
 
       - name: Verify rollout
