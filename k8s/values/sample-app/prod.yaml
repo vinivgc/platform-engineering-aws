@@ -1,21 +1,17 @@
 deployment:
-  replicas: 1
+  replicas: 3
 
 image:
   repository: platform-engineering-aws-ecr
   registry: 319895613301.dkr.ecr.eu-west-1.amazonaws.com
-  tag: "latest"
+  tag: "specified"
   pullPolicy: IfNotPresent
 
-application:
-  port: 5000
-  healthPath: /health
-
 exposure:
-  type: internal
+  type: public
 
-workloadProfile: general
+workloadProfile: important
 
 env:
   - name: APP_ENV
-    value: default
+    value: prod

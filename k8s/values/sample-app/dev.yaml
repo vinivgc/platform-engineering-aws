@@ -1,0 +1,9 @@
+deployment:
+  replicas: 2
+
+exposure:
+  type: public
+
+env:
+  - name: APP_ENV
+    value: dev
