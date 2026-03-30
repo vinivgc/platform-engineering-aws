@@ -5,9 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-validate_environment "${1:-dev}"
+validate_structure
 
-cd "$TF_ENV_DIR"
+setup_profile
+
+cd "$TF_PLA_DIR"
 
 terraform init
 terraform fmt
@@ -24,7 +26,3 @@ terraform apply -auto-approve
 setup_config
 
 kubectl get nodes
-
-# kubectl apply -f "$APP_DIR/namespace.yaml"
-# kubectl apply -f "$APP_DIR/deployment.yaml"
-# kubectl apply -f "$APP_DIR/service.yaml"

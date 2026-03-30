@@ -5,18 +5,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-validate_environment "${1:-dev}"
+validate_structure
 
-# kubectl delete -f "$APP_DIR/service.yaml"
-# kubectl delete -f "$APP_DIR/deployment.yaml"
-# kubectl delete -f "$APP_DIR/namespace.yaml"
+setup_profile
 
 cd "$TF_PLA_ACC_DIR"
 
 terraform init
 terraform destroy -auto-approve
 
-cd "$TF_ENV_DIR"
+cd "$TF_PLA_DIR"
 
 terraform init
 terraform destroy -auto-approve

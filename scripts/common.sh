@@ -30,27 +30,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #   /home/user/project
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-validate_environment() {
-    ENVIRONMENT="${1:-dev}"
-
+validate_structure() {
     # Build the path to the Terraform directory.
     TF_DIR="$REPO_ROOT/terraform"
 
     # Build the path to the Terraform environment directory based on ENVIRONMENT.
-    TF_ENV_DIR="$TF_DIR/environments/$ENVIRONMENT"
+    TF_PLA_DIR="$TF_DIR/platform"
 
     # Build the path to the Terraform platform access directory.
     TF_PLA_ACC_DIR="$TF_DIR/platform-access/github-actions"
-
-    # Build the path to the sample application manifests.
-    # APP_DIR="$REPO_ROOT/apps/sample-app"
 
     # Check whether the Terraform directory exists.
     # If it does not exist, print an error and stop the script.
     #
     # -d checks whether the path exists and is a directory.
-    if [[ ! -d "$TF_ENV_DIR" ]]; then
-    echo "Error: Terraform environment directory not found: $TF_ENV_DIR"
+    if [[ ! -d "$TF_PLA_DIR" ]]; then
+    echo "Error: Terraform environment directory not found: $TF_PLA_DIR"
     exit 1
     fi
 
@@ -62,18 +57,15 @@ validate_environment() {
     echo "Error: Terraform environment directory not found: $TF_PLA_ACC_DIR"
     exit 1
     fi
-
-    # Check whether the application directory exists.
-    # If it does not exist, print an error and stop the script.
-    # if [[ ! -d "$APP_DIR" ]]; then
-    # echo "Error: App directory not found: $APP_DIR"
-    # exit 1
-    # fi
 }
 
 setup_config() {
     # Setup EKS cluster connection
     aws eks update-kubeconfig \
     --region eu-west-1 \
-    --name "platform-engineering-aws-${ENVIRONMENT}-eks"
+    --name "platform-engineering-aws-eks"
+}
+
+setup_profile() {
+    export AWS_PROFILE=aws-administrator
 }

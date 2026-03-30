@@ -3,37 +3,32 @@ variable "project_name" {
   description = "Name of the Project"
 }
 
-variable "aws_profile" {
-  type        = string
-  description = "Profile used to execute operations"
-}
-
 variable "aws_region" {
   type        = string
   description = "AWS region for resources"
 }
 
-variable "github_org" {
-  description = "GitHub owner or organization"
+variable "ecr_role_name" {
   type        = string
+  description = "IAM role name for GitHub Actions"
+}
+
+variable "eks_role_name" {
+  type        = string
+  description = "IAM role name for GitHub Actions"
+}
+
+variable "github_org" {
+  type        = string
+  description = "GitHub owner or organization"
 }
 
 variable "github_repo" {
-  description = "GitHub repository name"
   type        = string
+  description = "GitHub repository name"
 }
 
 variable "github_branch" {
+  type        = string
   description = "GitHub branch allowed to assume the role"
-  type        = string
-}
-
-variable "role_name" {
-  description = "IAM role name for GitHub Actions"
-  type        = string
-}
-
-variable "eks_cluster_name" {
-  description = "Target EKS cluster name"
-  type        = string
 }

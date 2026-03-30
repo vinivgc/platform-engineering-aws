@@ -22,6 +22,31 @@ This project demonstrates a **platform engineering approach** to deploying appli
 
 ---
 
+
+## ⚙️ Setup
+
+### Terraform Backend & Bootstrap
+
+This project uses a **remote Terraform backend (S3 + DynamoDB)** for state management and locking.
+
+Because Terraform cannot use a backend that does not yet exist, the backend infrastructure was **bootstrapped in an initial one-time step**:
+
+1. Terraform was first run using **local state**
+2. The S3 bucket and DynamoDB lock table were created
+3. The Terraform state was then **migrated to the remote backend**
+4. From that point on, all Terraform operations use the remote backend
+
+> ℹ️ The backend resources are already created in this project, so the repository is currently configured to use the remote backend directly.
+
+#### Running this project from scratch
+
+If you were to run this project in a new AWS account, you would need to:
+
+- temporarily switch the `bootstrap` stack to a **local backend**, or
+- manually create the S3 bucket and DynamoDB table before running `terraform init`
+
+---
+
 ## 🔁 End-to-End Flow
 
 1. Developer pushes code
@@ -135,7 +160,6 @@ Ensures safe re-deployments.
 
 ## 🌍 Environment
 
-* Namespace: `dev`
 * Cluster: EKS
 * Exposure: LoadBalancer
 
@@ -143,8 +167,7 @@ Ensures safe re-deployments.
 
 ## 📈 Future Improvements
 
-* Multi-environment support (dev/prod)
-* Ingress (ALB) instead of LoadBalancer
+* Ingress/Gateway API instead of LoadBalancer
 * Autoscaling (HPA)
 * Observability (metrics/logging)
 * Secrets management

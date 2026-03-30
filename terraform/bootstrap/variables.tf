@@ -8,8 +8,3 @@ variable "aws_region" {
   default     = "eu-west-1"
   description = "AWS region for resources"
 }
-
-variable "aws_profile" {
-  type        = string
-  description = "Profile used to execute operations"
-}

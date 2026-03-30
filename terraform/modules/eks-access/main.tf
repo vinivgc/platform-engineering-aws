@@ -1,5 +1,5 @@
 resource "aws_iam_role" "eks_cluster" {
-  name = "${var.project_name}-${var.environment}-eks-cluster-role"
+  name = "${var.project_name}-eks-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -14,7 +14,7 @@ resource "aws_iam_role" "eks_cluster" {
 }
 
 resource "aws_iam_role" "eks_nodes" {
-  name = "${var.project_name}-${var.environment}-eks-nodes-role"
+  name = "${var.project_name}-eks-nodes-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -28,22 +28,22 @@ resource "aws_iam_role" "eks_nodes" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  role       = aws_iam_role.eks_cluster.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-}
-
-resource "aws_iam_role_policy_attachment" "worker_node_policy" {
-  role       = aws_iam_role.eks_nodes.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-}
-
 resource "aws_iam_role_policy_attachment" "cni_policy" {
   role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  role       = aws_iam_role.eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
 resource "aws_iam_role_policy_attachment" "registry_policy" {
   role       = aws_iam_role.eks_nodes.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "worker_node_policy" {
+  role       = aws_iam_role.eks_nodes.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }

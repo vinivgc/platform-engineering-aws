@@ -2,7 +2,25 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+crash.log
 
-# Terraform variables (secrets)
+# Terraform variables
 *.tfvars
 *.tfvars.json
+
+# Terraform plan output
+*.tfplan
+*.plan
+
+# Terraform CLI config
+.terraformrc
+terraform.rc
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Backend config files
+backend.hcl

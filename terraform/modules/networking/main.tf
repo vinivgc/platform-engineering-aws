@@ -1,10 +1,14 @@
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-vpc"
+    Name = "${var.project_name}-vpc"
   }
 }
 
@@ -12,7 +16,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-igw"
+    Name = "${var.project_name}-igw"
   }
 }
 
@@ -24,11 +28,12 @@ resource "aws_subnet" "public" {
   cidr_block              = var.public_subnet_cidrs[count.index]
   map_public_ip_on_launch = true
 
-  tags = {
-    Name                                                               = "${var.project_name}-${var.environment}-public-${count.index + 1}"
-    "kubernetes.io/role/elb"                                           = "1"
-    "kubernetes.io/cluster/${var.project_name}-${var.environment}-eks" = "shared"
-  }
+  tags = merge(
+    {
+      Name = "${var.project_name}-public-${count.index + 1}"
+    },
+    local.public_k8s_tags
+  )
 }
 
 resource "aws_subnet" "private" {
@@ -38,18 +43,19 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
   cidr_block        = var.private_subnet_cidrs[count.index]
 
-  tags = {
-    Name                                                               = "${var.project_name}-${var.environment}-private-${count.index + 1}"
-    "kubernetes.io/role/internal-elb"                                  = "1"
-    "kubernetes.io/cluster/${var.project_name}-${var.environment}-eks" = "shared"
-  }
+  tags = merge(
+    {
+      Name = "${var.project_name}-private-${count.index + 1}"
+    },
+    local.private_k8s_tags
+  )
 }
 
 resource "aws_eip" "nat" {
   domain = "vpc"
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-nat-eip"
+    Name = "${var.project_name}-nat-eip"
   }
 }
 
@@ -58,7 +64,7 @@ resource "aws_nat_gateway" "main" {
   subnet_id     = aws_subnet.public[0].id
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-nat"
+    Name = "${var.project_name}-nat"
   }
 
   depends_on = [aws_internet_gateway.main]
@@ -68,7 +74,7 @@ resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-public-rt"
+    Name = "${var.project_name}-public-rt"
   }
 }
 
@@ -89,7 +95,7 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-private-rt"
+    Name = "${var.project_name}-private-rt"
   }
 }
 
