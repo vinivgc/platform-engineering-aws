@@ -6,23 +6,23 @@ on:
       - main
     paths:
       - 'apps/sample-app/**'
-      - '.github/workflows/ci-sample-app.yml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'apps/sample-app/**'
-      - '.github/workflows/ci-sample-app.yml'
+      - '.github/workflows/ci.yml'
 
 permissions:
   id-token: write
   contents: read
 
 env:
-  AWS_REGION: eu-west-1
-  AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
-  ECR_REPOSITORY: platform-engineering-aws-ecr
-  APP_PATH: apps/sample-app
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  APP_PATH: ${{ vars.APP_PATH }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
 
 jobs:
   build-and-push:

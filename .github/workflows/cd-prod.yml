@@ -13,12 +13,16 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: eu-west-1
-  AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
-  EKS_CLUSTER_NAME: platform-engineering-aws-eks
-  K8S_NAMESPACE: prod
-  RELEASE_NAME: sample-app
-  CHART_PATH: k8s/charts/sample-app
+  RELEASE_NAME: ${{ vars.RELEASE_NAME }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+  CHART_PATH: ${{ vars.CHART_PATH }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+
+concurrency:
+  group: cd-prod
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -46,7 +50,7 @@ jobs:
             --namespace $K8S_NAMESPACE \
             --create-namespace \
             -f k8s/values/sample-app/prod.yaml \
-            --set image.tag=${{ github.event.inputs.image_tag }} \
+            --set image.tag=${{ github.event.inputs.image_tag }}
 
       - name: Verify rollout
         run: |

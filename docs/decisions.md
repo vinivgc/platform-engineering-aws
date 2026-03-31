@@ -1003,3 +1003,45 @@ AWS profile selection is local execution context, not infrastructure configurati
 
 **Reason:**
 The goal of the project is to demonstrate sound platform engineering judgment, not to simulate a full enterprise framework. Simplicity makes the design easier to review and easier to explain while still showing strong engineering decisions.
+
+### Use automatic deployment for dev and manual promotion for prod
+
+**Decision:** Deploy automatically to dev after a successful CI run on `main`, and require a manual workflow dispatch with an explicit image tag for prod.
+
+**Reason:**
+Dev should provide fast feedback and continuous integration, while prod should remain controlled and traceable. This also demonstrates a clear promotion model using immutable artifacts.
+
+### Store shared pipeline configuration in GitHub repository variables
+
+**Decision:** Move shared CI/CD settings such as AWS region, role ARN, cluster name, ECR repository, chart path, and app path into GitHub repository variables.
+
+**Reason:**
+These values are runtime pipeline configuration, not workflow logic. Keeping them outside the workflow files reduces hardcoding while preserving a simple and explicit design.
+
+### Store environment-specific deployment settings in GitHub Environments
+
+**Decision:** Use GitHub Environments such as `dev` and `prod` to hold environment-specific values like Kubernetes namespace.
+
+**Reason:**
+This keeps environment concerns separate from shared pipeline concerns, avoids duplicating workflow logic, and creates a cleaner path for future environment protections such as approvals.
+
+### Do not make CI/CD pipelines depend directly on Terraform outputs at runtime
+
+**Decision:** Do not fetch Terraform outputs from within CI/CD workflows, and do not connect deployment workflows directly to Terraform state.
+
+**Reason:**
+This avoids coupling application delivery to infrastructure state and keeps the boundary between provisioning and deployment clear. It also keeps the workflows simpler, more reliable, and easier to explain.
+
+### Prevent overlapping deployments with workflow concurrency
+
+**Decision:** Add concurrency control to CD workflows, cancelling stale in-progress runs for dev and allowing only one prod deployment at a time.
+
+**Reason:**
+This reduces deployment conflicts and reflects good operational discipline without adding much complexity. It is a small improvement that strengthens the platform engineering side of the project.
+
+### Keep the CI/CD design intentionally simple and explicit
+
+**Decision:** Prefer a clear and interview-friendly CI/CD structure over more dynamic or highly abstract patterns.
+
+**Reason:**
+The purpose of the project is to demonstrate sound platform engineering judgment. A simpler design makes the architecture easier to understand, easier to maintain, and easier to defend in interviews.

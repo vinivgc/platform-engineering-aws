@@ -12,12 +12,16 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: eu-west-1
-  AWS_ROLE_ARN: arn:aws:iam::319895613301:role/github-actions-platform-engineering-aws
-  EKS_CLUSTER_NAME: platform-engineering-aws-eks
-  K8S_NAMESPACE: dev
-  RELEASE_NAME: sample-app
-  CHART_PATH: k8s/charts/sample-app
+  RELEASE_NAME: ${{ vars.RELEASE_NAME }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+  CHART_PATH: ${{ vars.CHART_PATH }}
+  K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
+
+concurrency:
+  group: cd-dev
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -26,6 +30,8 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+
+    environment: dev
 
     steps:
       - name: Checkout repository
@@ -54,7 +60,7 @@ jobs:
             --namespace $K8S_NAMESPACE \
             --create-namespace \
             -f k8s/values/sample-app/dev.yaml \
-            --set image.tag=$IMAGE_TAG \
+            --set image.tag=$IMAGE_TAG
 
       - name: Verify rollout
         run: |
