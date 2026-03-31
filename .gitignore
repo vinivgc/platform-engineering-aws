@@ -7,6 +7,7 @@ crash.log
 # Terraform variables
 *.tfvars
 *.tfvars.json
+*.auto.tfvars.json
 
 # Terraform plan output
 *.tfplan

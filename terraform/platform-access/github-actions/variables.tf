@@ -8,14 +8,24 @@ variable "aws_region" {
   description = "AWS region for resources"
 }
 
+variable "ecr_repository_arn" {
+  type        = string
+  description = "ARN of the target ECR repository"
+}
+
 variable "ecr_role_name" {
   type        = string
-  description = "IAM role name for GitHub Actions"
+  description = "IAM role name for GitHub Actions to ECR"
+}
+
+variable "eks_cluster_name" {
+  type        = string
+  description = "Name of the target EKS cluster"
 }
 
 variable "eks_role_name" {
   type        = string
-  description = "IAM role name for GitHub Actions"
+  description = "IAM role name for GitHub Actions to EKS"
 }
 
 variable "github_org" {

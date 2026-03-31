@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run the contents of common.sh inside this script.
+AWS_PROFILE="${AWS_PROFILE:-your-profile}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PLATFORM_DIR="${ROOT_DIR}/terraform/platform"
+GH_ACCESS_DIR="${ROOT_DIR}/terraform/platform-access/github-actions"
 
-validate_structure
+export AWS_PROFILE
 
-setup_profile
-
-cd "$TF_PLA_ACC_DIR"
-
+echo "==> Destroying github-actions access stack"
+cd "$GH_ACCESS_DIR"
 terraform init
 terraform destroy -auto-approve
 
-cd "$TF_PLA_DIR"
-
+echo "==> Destroying platform stack"
+cd "$PLATFORM_DIR"
 terraform init
 terraform destroy -auto-approve
+
+echo "==> Done"

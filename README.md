@@ -158,6 +158,51 @@ Ensures safe re-deployments.
 
 ---
 
+### Terraform Stack Orchestration
+
+This project keeps Terraform root stacks independent and composes them through shell scripts.
+
+- Shared inputs such as `aws_region` and `project_name` are passed into each stack through generated `terraform.auto.tfvars.json` files
+- The `platform` stack exports outputs such as `cluster_name` and `ecr_repository_arn`
+- The orchestration script reads those outputs and passes them into the `platform-access/github-actions` stack
+
+This keeps stack boundaries explicit while still allowing the repository to manage the full end-to-end workflow.
+
+---
+
+### GitHub Actions
+
+#### GitHub Repository Variables
+
+Shared platform configuration is stored as repository-level variables:
+
+* AWS region
+* IAM role ARN
+* EKS cluster name
+* ECR repository name
+* Chart path and app path
+
+These values originate from Terraform but are **intentionally decoupled** from runtime pipelines.
+
+CI/CD pipelines do not depend on Terraform state.
+
+#### GitHub Environments
+
+Environment-specific configuration is handled via:
+
+dev
+prod
+
+Each environment defines:
+
+Kubernetes namespace
+
+This enables:
+
+Clear environment separation
+Future support for approvals (e.g., production gating)
+Environment-specific configuration without duplicating workflows
+
 ## 🌍 Environment
 
 * Cluster: EKS
@@ -171,6 +216,10 @@ Ensures safe re-deployments.
 * Autoscaling (HPA)
 * Observability (metrics/logging)
 * Secrets management
+* Add approval gates for production environment
+* Introduce per-developer namespaces (preview environments)
+* Sync Terraform outputs automatically to GitHub variables
+* Add observability (logs/metrics)
 
 ---
 

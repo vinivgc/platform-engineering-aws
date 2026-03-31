@@ -931,3 +931,75 @@ This exposes a simple self-service interface while ensuring that platform-owned 
 
 **Reason:**
 The image tag is an ECR artifact identifier, not a Git ref. `actions/checkout` expects a branch, tag, or commit from the repository, so using the image tag there would be incorrect.
+
+## 2026-03-31
+
+### Separate platform infrastructure from CI/CD access infrastructure
+
+**Decision:** Keep core AWS platform resources in `terraform/platform/` and GitHub Actions IAM/OIDC access in `terraform/platform-access/github-actions/`.
+
+**Reason:**
+The platform stack owns long-lived runtime infrastructure such as networking, EKS, and ECR. The GitHub Actions stack owns CI/CD access concerns such as OIDC trust and IAM roles. This separation keeps responsibilities clear and makes the architecture easier to explain in interviews.
+
+### Keep Terraform root stacks independent and compose them through scripts
+
+**Decision:** Avoid direct Terraform stack coupling for platform-to-access wiring, and instead orchestrate the stacks through shell scripts.
+
+**Reason:**
+This keeps each Terraform root focused on its own responsibility and avoids embedding backend/state knowledge from one stack into another. Shared values and handoffs are handled at the workflow layer, which is a clean and realistic pattern for infrastructure repositories.
+
+### Pass shared root inputs consistently through generated Terraform variable files
+
+**Decision:** Use generated `terraform.auto.tfvars.json` files in scripts to pass shared inputs such as `aws_region` and `project_name` into Terraform root stacks.
+
+**Reason:**
+This standardizes how root stacks receive configuration, keeps Terraform inputs explicit, and avoids mixing multiple patterns such as local shell-only config for one stack and file-based config for another.
+
+### Pass platform outputs to downstream stacks through the orchestration layer
+
+**Decision:** Read platform outputs such as `cluster_name` and `ecr_repository_arn` after applying the platform stack, and pass them into the GitHub Actions access stack through generated Terraform variables.
+
+**Reason:**
+These values are produced by the platform stack but consumed by the access stack. Passing them through the orchestration layer preserves clean stack boundaries while still allowing the repository to manage the full end-to-end flow.
+
+### Keep GitHub trust configuration local to the GitHub Actions stack
+
+**Decision:** Keep values such as `github_org`, `github_repository`, `github_branch`, and GitHub Actions IAM role names in `terraform/platform-access/github-actions/`.
+
+**Reason:**
+These values are access-policy decisions, not platform outputs. Keeping them local to the GitHub Actions stack preserves separation of concerns and avoids overloading platform state with unrelated configuration.
+
+### Use explicit module dependency for EKS IAM readiness
+
+**Decision:** Add an explicit dependency from the EKS cluster module to the EKS access/IAM module.
+
+**Reason:**
+The cluster and managed node group require IAM roles and policy attachments to be fully in place before creation. An explicit dependency makes apply ordering safer and avoids IAM-related provisioning issues.
+
+### Make Kubernetes subnet tagging explicit instead of relying on hidden naming contracts
+
+**Decision:** Remove implicit Kubernetes subnet tagging based on hardcoded naming assumptions inside the networking module and make EKS-related tagging an explicit input.
+
+**Reason:**
+This avoids hidden coupling between networking and EKS. The dependency still exists when EKS is used, but it is now visible at the composition layer instead of being buried inside module internals.
+
+### Harden the Terraform backend bucket beyond backend encryption settings
+
+**Decision:** Add S3 bucket hardening for Terraform state, including bucket encryption configuration and public access blocking.
+
+**Reason:**
+Terraform backend encryption settings help protect the state object, but bucket-level hardening improves the default security posture of the backend itself and reduces the risk of accidental exposure.
+
+### Keep AWS authentication outside Terraform variables
+
+**Decision:** Remove `aws_profile` from Terraform variables and provide AWS authentication through environment variables in scripts.
+
+**Reason:**
+AWS profile selection is local execution context, not infrastructure configuration. Keeping it outside Terraform makes the root modules cleaner and avoids mixing operator-specific settings with declarative infrastructure inputs.
+
+### Keep the project intentionally simple and optimize for clarity over maximum abstraction
+
+**Decision:** Prefer a clear, interview-friendly Terraform structure over adding excessive validation, abstraction, or generalized logic.
+
+**Reason:**
+The goal of the project is to demonstrate sound platform engineering judgment, not to simulate a full enterprise framework. Simplicity makes the design easier to review and easier to explain while still showing strong engineering decisions.

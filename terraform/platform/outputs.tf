@@ -33,14 +33,14 @@ output "eks_cluster_endpoint" {
   description = "Endpoint of the EKS cluster"
 }
 
+output "ecr_repository_arn" {
+  description = "ARN of the ECR repository"
+  value       = module.ecr.repository_arn
+}
+
 output "ecr_repository_url" {
   description = "URL of the main ECR repository"
   value       = module.ecr.repository_url
-}
-
-output "ecr_repository_arn" {
-  description = "ARN of the main ECR repository"
-  value       = module.ecr.repository_arn
 }
 
 output "ecr_repository_name" {
