@@ -31,4 +31,3 @@ module "eks_cluster" {
 
   depends_on = [module.eks_access]
 }
-
