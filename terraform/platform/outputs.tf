@@ -33,17 +33,27 @@ output "eks_cluster_endpoint" {
   description = "Endpoint of the EKS cluster"
 }
 
+output "eks_cluster_oidc_provider_arn" {
+  value       = module.eks_cluster.cluster_oidc_provider_arn
+  description = "ARN of the IAM OIDC provider associated with the EKS cluster"
+}
+
+output "eks_cluster_oidc_issuer_url" {
+  value       = module.eks_cluster.cluster_oidc_issuer_url
+  description = "OIDC issuer URL of the EKS cluster"
+}
+
 output "ecr_repository_arn" {
-  description = "ARN of the ECR repository"
   value       = module.ecr.repository_arn
+  description = "ARN of the ECR repository"
 }
 
 output "ecr_repository_url" {
-  description = "URL of the main ECR repository"
   value       = module.ecr.repository_url
+  description = "URL of the main ECR repository"
 }
 
 output "ecr_repository_name" {
-  description = "Name of the main ECR repository"
   value       = module.ecr.repository_name
+  description = "Name of the main ECR repository"
 }
