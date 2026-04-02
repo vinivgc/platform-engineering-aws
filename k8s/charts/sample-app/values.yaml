@@ -1,3 +1,6 @@
+nameOverride: ""
+fullnameOverride: ""
+
 deployment:
   replicas: 1
 
@@ -11,10 +14,26 @@ application:
   port: 5000
   healthPath: /health
 
-exposure:
-  type: internal
+ingress:
+  enabled: false
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+  host: ""
+  path: /
+  pathType: Prefix
 
+# workloadProfile defines standard resource sizing
+# general   = small workloads
+# important = medium workloads
+# critical  = high-priority workloads
+#
+# Most services should use workloadProfile.
+# Use 'resources' only if you need fine-grained control.
 workloadProfile: general
+# optional override
+resources: {}
 
 env:
   - name: APP_ENV

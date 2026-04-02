@@ -22,3 +22,8 @@ variable "private_subnet_cidrs" {
   type        = list(string)
   description = "CIDR blocks for private subnets"
 }
+
+variable "cluster_admin_principal_arn" {
+  type        = string
+  description = "IAM role or user ARN that should administer the EKS cluster"
+}

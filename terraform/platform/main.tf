@@ -28,6 +28,7 @@ module "eks_cluster" {
   private_subnet_ids   = module.networking.private_subnet_ids
   role_eks_cluster_arn = module.eks_access.role_cluster_arn
   role_eks_nodes_arn   = module.eks_access.role_nodes_arn
+  cluster_admin_principal_arn = var.cluster_admin_principal_arn
 
   depends_on = [module.eks_access]
 }

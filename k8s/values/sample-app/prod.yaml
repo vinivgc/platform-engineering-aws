@@ -7,10 +7,10 @@ image:
   tag: "specified"
   pullPolicy: IfNotPresent
 
-exposure:
-  type: public
-
 workloadProfile: important
+
+ingress:
+  enabled: true
 
 env:
   - name: APP_ENV

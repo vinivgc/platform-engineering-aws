@@ -1,8 +1,8 @@
 deployment:
   replicas: 2
 
-exposure:
-  type: public
+ingress:
+  enabled: true
 
 env:
   - name: APP_ENV
