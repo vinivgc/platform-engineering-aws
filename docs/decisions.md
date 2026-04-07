@@ -1045,3 +1045,82 @@ This reduces deployment conflicts and reflects good operational discipline witho
 
 **Reason:**
 The purpose of the project is to demonstrate sound platform engineering judgment. A simpler design makes the architecture easier to understand, easier to maintain, and easier to defend in interviews.
+
+## 2026-04-07
+
+### Expose autoscaling through a platform-oriented scaling contract
+
+**Decision:** Expose autoscaling through a simplified `scaling` interface with fields such as `enabled`, `minReplicas`, `maxReplicas`, `targetCPUUtilization`, and `profile`, instead of exposing raw Kubernetes HPA behavior fields directly.
+
+**Reason:**
+This keeps the developer-facing interface focused on intent rather than Kubernetes internals. The chart owns the detailed HPA behavior, which makes the platform easier to consume and easier to explain in interviews.
+
+### Install Metrics Server as a platform add-on managed by Terraform
+
+**Decision:** Install Metrics Server in the `platform-addons` Terraform stack using the official Helm chart.
+
+**Reason:**
+Metrics Server is cluster-level platform functionality required by HPA and `kubectl top`, so it belongs with other shared add-ons rather than inside the application chart or workload configuration.
+
+### Standardize safe Helm release behavior for platform add-ons
+
+**Decision:** Use `atomic = true`, `cleanup_on_fail = true`, `wait = true`, and an explicit timeout for Helm-managed platform add-ons.
+
+**Reason:**
+These settings make add-on installation and upgrades safer and more predictable by avoiding partially failed releases and ensuring Terraform waits for resources to become ready.
+
+### Expose ingress through a small developer-facing contract and keep ALB details inside the platform
+
+**Decision:** Keep the developer-facing ingress configuration limited to values such as `enabled`, `host`, `path`, and `visibility`, while keeping AWS ALB annotations and ingress class details inside the chart.
+
+**Reason:**
+This allows developers to express exposure intent without needing to understand controller-specific implementation details. It creates a cleaner platform boundary and avoids leaking AWS-specific complexity into application configuration.
+
+### Expose pod security through a security profile instead of raw securityContext fields
+
+**Decision:** Expose pod hardening through a small `security.profile` interface, and keep the concrete Kubernetes `securityContext` settings inside the chart.
+
+**Reason:**
+This keeps security defaults consistent and reduces the need for developers to understand low-level Kubernetes security options. It also creates a stronger platform story by showing that the platform owns secure workload defaults.
+
+### Run the sample application as a non-root container
+
+**Decision:** Update the sample application image and Kubernetes settings to run as a dedicated non-root user, including `runAsNonRoot`, explicit UID/GID, disabled privilege escalation, dropped Linux capabilities, and `RuntimeDefault` seccomp.
+
+**Reason:**
+This aligns the workload with common Kubernetes hardening guidance without adding unnecessary complexity. It also makes the security context meaningful instead of being only declarative.
+
+### Expose disruption protection through an availability profile
+
+**Decision:** Expose PodDisruptionBudget behavior through an `availability.profile` value such as `none`, `standard`, or `critical`, instead of exposing raw PDB fields like `minAvailable` and `maxUnavailable`.
+
+**Reason:**
+This lets developers choose the level of protection they need without dealing with Kubernetes disruption policy details. The platform remains responsible for the exact PDB implementation.
+
+### Improve health checks by separating startup, liveness, and readiness concerns
+
+**Decision:** Split the sample application's health behavior into distinct startup, liveness, and readiness paths, and use Kubernetes startup, liveness, and readiness probes accordingly.
+
+**Reason:**
+This makes the deployment behavior more realistic and better reflects how real workloads should behave in Kubernetes. It also improves the platform story by showing that traffic routing and restart behavior are based on meaningful application signals.
+
+### Keep runtime configuration simple and focused on meaningful operational settings
+
+**Decision:** Externalize only a small set of meaningful runtime settings for the sample application, such as environment, message, and readiness-related behavior, instead of turning all metadata into configuration.
+
+**Reason:**
+Not every constant needs to become runtime config. Keeping only meaningful operational settings externalized avoids noise, reduces duplication, and keeps the sample application simple.
+
+### Use a Helm-managed ConfigMap for non-secret application runtime configuration
+
+**Decision:** Generate a ConfigMap from Helm values and inject it into the application with `envFrom` for non-sensitive runtime settings.
+
+**Reason:**
+This creates a clearer separation between workload definition and runtime configuration while keeping the implementation simple. It improves the platform design without introducing unnecessary complexity such as manual ConfigMap management or secrets handling.
+
+### Keep the Service interface simple by deriving targetPort from the application port
+
+**Decision:** Keep the Service interface simple by mapping the Service port to the application port, and avoid exposing unnecessary Service port configuration to developers.
+
+**Reason:**
+This reduces duplication and prevents misconfiguration between service and container ports. It also keeps the platform contract focused on the application’s listening port while preserving a clean Service convention.

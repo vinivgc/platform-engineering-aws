@@ -44,3 +44,23 @@ variable "aws_load_balancer_controller_role_name" {
   type = string
   description = "IAM role name for AWS Load Balancer Controller"
 }
+
+variable "metrics_server_chart_version" {
+  type        = string
+  description = "Metrics Server Helm chart version"
+  default     = "3.13.0"
+}
+
+variable "metrics_server_replicas" {
+  type        = number
+  description = "Number of Metrics Server replicas"
+  default     = 2
+}
+
+variable "metrics_server_args" {
+  type        = list(string)
+  description = "Extra args for Metrics Server"
+  default = [
+    "--kubelet-preferred-address-types=InternalIP,Hostname,ExternalIP"
+  ]
+}

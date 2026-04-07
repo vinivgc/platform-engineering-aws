@@ -1,9 +1,16 @@
-deployment:
-  replicas: 2
-
 ingress:
   enabled: true
+  host: ""
+  visibility: public
 
-env:
-  - name: APP_ENV
-    value: dev
+security:
+  profile: restricted
+
+scaling:
+  enabled: true
+
+config:
+  appEnv: dev
+  appMessage: "Hello from dev"
+  readinessDelaySeconds: "5"
+  requireMessage: "true"

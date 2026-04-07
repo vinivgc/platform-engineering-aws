@@ -12,3 +12,8 @@ output "aws_load_balancer_controller_helm_release_name" {
   value       = module.aws_load_balancer_controller.helm_release_name
   description = "Name of the Helm release for the AWS Load Balancer Controller"
 }
+
+output "metrics_server_helm_release_name" {
+  value       = module.metrics_server.helm_release_name
+  description = "Name of the Helm release for Metrics Server"
+}

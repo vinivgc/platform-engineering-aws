@@ -1,0 +1,17 @@
+{{- if ne .Values.availability.profile "none" }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "sample-app.fullname" . }}
+  labels:
+    {{- include "sample-app.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "sample-app.selectorLabels" . | nindent 6 }}
+  {{- if eq .Values.availability.profile "critical" }}
+  minAvailable: 2
+  {{- else }}
+  minAvailable: 1
+  {{- end }}
+{{- end }}

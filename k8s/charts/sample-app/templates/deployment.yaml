@@ -5,7 +5,9 @@ metadata:
     {{- include "sample-app.labels" . | nindent 4  }}
   name: {{ include "sample-app.fullname" . }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.deployment.replicas }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "sample-app.selectorLabels" . | nindent 6 }}
@@ -19,6 +21,18 @@ spec:
       labels:
         {{- include "sample-app.selectorLabels" . | nindent 8 }}
     spec:
+      securityContext:
+        {{- if eq .Values.security.profile "restricted" }}
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+        {{- else }}
+        seccompProfile:
+          type: RuntimeDefault
+        {{- end }}
       containers:
       - image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         name: {{ include "sample-app.name" . }}
@@ -27,9 +41,19 @@ spec:
         - name: http
           containerPort: {{ .Values.application.port }}
           protocol: TCP
-        env:
-          {{- toYaml .Values.env | nindent 10 }}
+        envFrom:
+          - configMapRef:
+              name: {{ include "sample-app.fullname" . }}
         {{- if .Values.resources }}
+        securityContext:
+          {{- if eq .Values.security.profile "restricted" }}
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          {{- else }}
+          allowPrivilegeEscalation: false
+          {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         {{- else if eq .Values.workloadProfile "critical" }}
@@ -57,19 +81,24 @@ spec:
             cpu: 250m
             memory: 256Mi
         {{- end }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.application.probes.startupPath }}
+            port: {{ .Values.application.port }}
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 12
         livenessProbe:
           httpGet:
-            path: {{ .Values.application.healthPath }}
+            path: {{ .Values.application.probes.livenessPath }}
             port: {{ .Values.application.port }}
-          initialDelaySeconds: 15
           periodSeconds: 10
           timeoutSeconds: 2
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: {{ .Values.application.healthPath }}
+            path: {{ .Values.application.probes.readinessPath }}
             port: {{ .Values.application.port }}
-          initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 2
           failureThreshold: 3

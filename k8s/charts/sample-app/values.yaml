@@ -14,15 +14,17 @@ application:
   port: 5000
   healthPath: /health
 
+# visibility defines wether app is reachable from the internet
+# internal   = not reachable
+# public = reachable
 ingress:
   enabled: false
-  className: alb
-  annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
   host: ""
   path: /
-  pathType: Prefix
+  visibility: internal
+
+security:
+  profile: restricted
 
 # workloadProfile defines standard resource sizing
 # general   = small workloads
@@ -35,6 +37,34 @@ workloadProfile: general
 # optional override
 resources: {}
 
-env:
-  - name: APP_ENV
-    value: default
+# profile defines horizontal auto-scaling behavior
+# conservative   = slower scale up, slower scale down
+# standard = moderate scale up, moderate scale down
+# aggressive  = fast scale up, fast scale down
+#
+# Most apps should use standard.
+# Use 'conservative' for apps that do not expect too many changes
+# Use 'aggressive' for lightweight apps which needs fast response rate
+scaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilization: 70
+  profile: standard
+
+# profile defines pod disruption budget behavior
+# none     = there are no minimun number of pods 
+# standard = sets minimun number of pods available to a minimun number
+# critical = sets minimun number of pods available to a high number 
+#
+# Most apps should use standard.
+# Use 'conservative' for apps that do not expect too many changes
+# Use 'aggressive' for lightweight apps which needs fast response rate
+availability:
+  profile: standard
+
+config:
+  appEnv: default
+  appMessage: "Hello from Platform Engineering Project"
+  readinessDelaySeconds: "0"
+  requireMessage: "false"
