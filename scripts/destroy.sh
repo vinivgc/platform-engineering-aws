@@ -22,17 +22,6 @@ trap cleanup EXIT
 
 export AWS_PROFILE
 
-echo "==> Formatting current user's ARN"
-RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
-
-if [[ "$RAW_ARN" == *":assumed-role/"* ]]; then
-  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-  ROLE_NAME="$(echo "$RAW_ARN" | cut -d'/' -f2)"
-  CLUSTER_ADMIN_PRINCIPAL_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
-else
-  CLUSTER_ADMIN_PRINCIPAL_ARN="$RAW_ARN"
-fi
-
 echo "==> Reading platform outputs"
 cd "$PLATFORM_DIR"
 EKS_CLUSTER_NAME="$(terraform output -raw eks_cluster_name)"
@@ -40,17 +29,6 @@ EKS_CLUSTER_OIDC_PROVIDER_ARN="$(terraform output -raw eks_cluster_oidc_provider
 EKS_CLUSTER_OIDC_PROVIDER_URL="$(terraform output -raw eks_cluster_oidc_issuer_url)"
 VPC_ID="$(terraform output -raw vpc_id)"
 ECR_REPOSITORY_ARN="$(terraform output -raw ecr_repository_arn)"
-
-echo "==> Formatting current user's ARN"
-RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
-
-if [[ "$RAW_ARN" == *":assumed-role/"* ]]; then
-  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
-  ROLE_NAME="$(echo "$RAW_ARN" | cut -d'/' -f2)"
-  CLUSTER_ADMIN_PRINCIPAL_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
-else
-  CLUSTER_ADMIN_PRINCIPAL_ARN="$RAW_ARN"
-fi
 
 echo "==> Writing generated tfvars for github-actions access stack"
 cat > "$GH_ACCESS_AUTO_TFVARS" <<EOF
@@ -101,11 +79,23 @@ cd "$PLATFORM_ADDONS_DIR"
 terraform init
 terraform destroy -auto-approve
 
+echo "==> Formatting current user's ARN"
+RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
+
+if [[ "$RAW_ARN" == *":assumed-role/"* ]]; then
+  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+  ROLE_NAME="$(echo "$RAW_ARN" | cut -d'/' -f2)"
+  CLUSTER_ADMIN_PRINCIPAL_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
+else
+  CLUSTER_ADMIN_PRINCIPAL_ARN="$RAW_ARN"
+fi
+
 echo "==> Writing generated tfvars for platform stack"
 cat > "$PLATFORM_AUTO_TFVARS" <<EOF
 {
   "aws_region": "${AWS_REGION}",
   "project_name": "${PROJECT_NAME}"
+  "cluster_admin_principal_arn": "${CLUSTER_ADMIN_PRINCIPAL_ARN}"
 }
 EOF
 
