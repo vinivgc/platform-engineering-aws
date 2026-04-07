@@ -6,10 +6,8 @@ from flask import Flask, jsonify
 
 START_TIME = time.time()
 
-
 def get_env(name: str, default: str) -> str:
     return os.getenv(name, default)
-
 
 def create_app() -> Flask:
     app = Flask(__name__)
@@ -62,7 +60,6 @@ def create_app() -> Flask:
         ), 200
 
     return app
-
 
 app = create_app()
 
