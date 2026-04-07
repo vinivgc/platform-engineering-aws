@@ -15,7 +15,7 @@ permissions:
 env:
   RELEASE_NAME: ${{ vars.RELEASE_NAME }}
   AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  AWS_EKS_ROLE_ARN: ${{ vars.AWS_EKS_ROLE_ARN }}
   EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
   CHART_PATH: ${{ vars.CHART_PATH }}
   K8S_NAMESPACE: ${{ vars.K8S_NAMESPACE }}
@@ -35,7 +35,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_EKS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Update kubeconfig
