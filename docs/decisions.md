@@ -1124,3 +1124,87 @@ This creates a clearer separation between workload definition and runtime config
 
 **Reason:**
 This reduces duplication and prevents misconfiguration between service and container ports. It also keeps the platform contract focused on the application’s listening port while preserving a clean Service convention.
+
+### Keep the AWS Load Balancer Controller in a dedicated platform-addons stack
+
+**Decision:** Manage the AWS Load Balancer Controller in the `platform-addons` Terraform stack instead of placing it inside the core platform infrastructure stack.
+
+**Reason:**
+The controller is a cluster addon, not foundational infrastructure like VPC or EKS itself. Keeping it in the addons layer preserves a cleaner boundary between base platform provisioning and operational cluster capabilities.
+
+### Use IRSA for the AWS Load Balancer Controller
+
+**Decision:** Grant AWS permissions to the AWS Load Balancer Controller through IAM Roles for Service Accounts (IRSA) instead of relying on broad node-level permissions.
+
+**Reason:**
+This follows the recommended EKS pattern, keeps permissions scoped to the controller, and demonstrates a cleaner and more production-aligned integration between AWS IAM and Kubernetes service accounts.
+
+### Create the controller service account outside Helm and bind it to IAM explicitly
+
+**Decision:** Create the `aws-load-balancer-controller` Kubernetes service account in Terraform and configure the Helm chart to reuse it with `serviceAccount.create = false`.
+
+**Reason:**
+This keeps the IRSA relationship explicit and reliable. The IAM role annotation lives on a Terraform-managed service account, while Helm is only responsible for installing the controller itself.
+
+### Pass AWS Load Balancer Controller versions explicitly from the caller module
+
+**Decision:** Define the AWS Load Balancer Controller chart version and controller version in `platform-addons` and pass them explicitly into the `alb-controller` module.
+
+**Reason:**
+This avoids hidden module defaults, makes upgrades intentional, and ensures the addon version used by the module matches the version declared by the caller.
+
+### Pin upstream vendor IAM policies in the repository instead of downloading them during Terraform apply
+
+**Decision:** Store the AWS Load Balancer Controller IAM policy JSON in the repository and load it from a local file instead of fetching it from GitHub at apply time.
+
+**Reason:**
+This makes Terraform runs more deterministic, removes an unnecessary runtime dependency on an external source, and makes the exact vendor policy version visible and reviewable in Git.
+
+### Use Terraform-native IAM policy documents for small project-owned policies and pinned JSON files for large vendor-managed policies
+
+**Decision:** Keep custom project policies such as GitHub Actions access policies defined with `aws_iam_policy_document`, while using locally pinned JSON files for large upstream-managed policies such as the AWS Load Balancer Controller policy.
+
+**Reason:**
+Small project-owned policies are easier to understand and maintain inline in Terraform, while large vendor-managed policies are clearer and safer when preserved in their upstream structure and version-pinned in the repository.
+
+### Keep the AWS Load Balancer Controller module focused only on controller concerns
+
+**Decision:** Limit the `alb-controller` module inputs and resources to controller-specific concerns such as IRSA, Helm installation, naming, and controller settings, and remove unrelated variables.
+
+**Reason:**
+A focused module is easier to understand, easier to explain in interviews, and less likely to accumulate copy-paste configuration that does not belong to the controller itself.
+
+### Derive AWS region from the provider inside the AWS Load Balancer Controller module
+
+**Decision:** Use `data.aws_region.current` inside the `alb-controller` module instead of passing AWS region in as a module input.
+
+**Reason:**
+The region is already known by the configured AWS provider, so deriving it inside the module reduces unnecessary wiring and avoids mismatches between provider configuration and caller-supplied variables.
+
+### Keep namespace and service account identity explicit in the AWS Load Balancer Controller module
+
+**Decision:** Represent the controller namespace and service account name explicitly in the module and use them consistently in the Kubernetes service account, Helm values, and IAM trust policy.
+
+**Reason:**
+The controller IAM role trust relationship depends on the exact Kubernetes service account identity. Making these values explicit improves clarity and prevents subtle IRSA misalignment.
+
+### Make controller behavior explicit instead of relying on chart defaults
+
+**Decision:** Expose important AWS Load Balancer Controller behavior such as `enableServiceMutatorWebhook` as an explicit module setting rather than relying silently on Helm chart defaults.
+
+**Reason:**
+This makes the module easier to reason about, makes behavior changes more visible during review, and shows deliberate control over addon behavior rather than accidental dependence on defaults.
+
+### Keep the AWS Load Balancer Controller implementation simple and document CRD upgrade considerations instead of automating full CRD lifecycle management
+
+**Decision:** Do not add full CRD lifecycle automation to the `alb-controller` module, but explicitly acknowledge that controller upgrades may require CRD handling outside normal Helm upgrade behavior.
+
+**Reason:**
+For this project, the main value is showing sound platform engineering structure, addon integration, and developer-facing platform capabilities. Full CRD lifecycle automation would add complexity that is real but not central to the project’s main signal.
+
+### Use the official AWS Load Balancer Controller IAM policy as the baseline for the project
+
+**Decision:** Use the official AWS Load Balancer Controller IAM policy as the baseline policy for this project instead of spending project scope on aggressive least-privilege customization.
+
+**Reason:**
+The project is intended to highlight platform architecture, EKS addon integration, and how the platform serves developers. Using the recommended policy keeps the implementation clear, while still leaving room to explain that production hardening could further scope permissions down if needed.

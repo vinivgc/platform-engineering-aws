@@ -1,7 +1,3 @@
-data "http" "aws_load_balancer_controller_iam_policy" {
-  url = local.iam_policy_url
-}
-
 data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
   statement {
     sid     = "AllowAssumeRoleWithWebIdentity"
@@ -15,7 +11,7 @@ data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_issuer_hostpath}:sub"
-      values   = ["system:serviceaccount:${local.service_account_namespace}:${local.service_account_name}"]
+      values   = ["system:serviceaccount:${var.namespace}:${var.service_account_name}"]
     }
 
     condition {
@@ -27,13 +23,21 @@ data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
 }
 
 resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name        = "${var.project_name}-aws-load-balancer-controller-policy"
-  policy      = data.http.aws_load_balancer_controller_iam_policy.response_body
+  name   = "${var.project_name}-aws-load-balancer-controller-policy"
+  policy = file(local.iam_policy_path)
+
+  tags = {
+    Name = "${var.project_name}-aws-load-balancer-controller-policy"
+  }
 }
 
 resource "aws_iam_role" "aws_load_balancer_controller" {
   name               = var.role_name
   assume_role_policy = data.aws_iam_policy_document.aws_load_balancer_controller_assume_role.json
+
+  tags = {
+    Name = var.role_name
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {

@@ -1,8 +1,3 @@
-variable "aws_region" {
-  type        = string
-  description = "AWS region for resources"
-}
-
 variable "eks_cluster_name" {
   type        = string
   description = "Name of the EKS cluster"

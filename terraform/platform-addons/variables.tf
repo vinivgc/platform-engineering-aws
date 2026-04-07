@@ -28,21 +28,21 @@ variable "eks_cluster_vpc_id" {
   description = "ID of the VPC where the EKS cluster is deployed"
 }
 
+variable "aws_load_balancer_controller_role_name" {
+  type = string
+  description = "IAM role name for AWS Load Balancer Controller"
+}
+
 variable "aws_load_balancer_controller_chart_version" {
   type        = string
   description = "AWS Load Balancer Controller Helm chart version"
-  default     = "3.1.0"
+  default     = "3.2.1"
 }
 
 variable "aws_load_balancer_controller_version" {
   type        = string
   description = "AWS Load Balancer Controller version for IAM policy"
-  default     = "v3.1.0"
-}
-
-variable "aws_load_balancer_controller_role_name" {
-  type = string
-  description = "IAM role name for AWS Load Balancer Controller"
+  default     = "v3.2.1"
 }
 
 variable "metrics_server_chart_version" {

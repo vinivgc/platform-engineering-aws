@@ -31,11 +31,27 @@ variable "role_name" {
 variable "chart_version" {
   type        = string
   description = "AWS Load Balancer Controller Helm chart version"
-  default     = "1.7.1"
 }
 
 variable "controller_version" {
   type        = string
   description = "Controller version for IAM policy"
-  default     = "v2.7.1"
+}
+
+variable "namespace" {
+  type        = string
+  description = "Namespace where the controller will run"
+  default     = "kube-system"
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "Service account name used by the controller"
+  default     = "aws-load-balancer-controller"
+}
+
+variable "enable_service_mutator_webhook" {
+  type        = bool
+  description = "Whether the controller should become the default controller for new LoadBalancer services"
+  default     = true
 }
