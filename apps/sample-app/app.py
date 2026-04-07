@@ -9,7 +9,6 @@ START_TIME = time.time()
 def get_env(name: str, default: str) -> str:
     return os.getenv(name, default)
 
-
 def create_app() -> Flask:
     app = Flask(__name__)
 
