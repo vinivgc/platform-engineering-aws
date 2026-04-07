@@ -1209,13 +1209,6 @@ For this project, the main value is showing sound platform engineering structure
 **Reason:**
 The project is intended to highlight platform architecture, EKS addon integration, and how the platform serves developers. Using the recommended policy keeps the implementation clear, while still leaving room to explain that production hardening could further scope permissions down if needed.
 
-
-
-
-
-
-
-
 ### Merge EKS IAM role creation into the EKS cluster module
 
 **Decision:** Move EKS control plane and node group IAM role creation into the `eks-cluster` module instead of keeping a separate `eks-access` module.
