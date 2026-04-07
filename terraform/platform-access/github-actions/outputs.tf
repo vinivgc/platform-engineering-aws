@@ -4,11 +4,11 @@ output "github_actions_oidc_provider_arn" {
 }
 
 output "github_actions_ecr_role_arn" {
-  value       = module.github-ecr-access.role_arn
+  value       = module.github_ecr_access.iam_role_arn
   description = "ARN of the IAM role assumed by GitHub Actions when executing ECR tasks"
 }
 
 output "github_actions_eks_role_arn" {
-  value       = module.github_eks_access.role_arn
+  value       = module.github_eks_access.iam_role_arn
   description = "ARN of the IAM role assumed by GitHub Actions when executing EKS tasks"
 }

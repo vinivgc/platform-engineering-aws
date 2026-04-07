@@ -22,14 +22,6 @@ trap cleanup EXIT
 
 export AWS_PROFILE
 
-echo "==> Reading platform outputs"
-cd "$PLATFORM_DIR"
-EKS_CLUSTER_NAME="$(terraform output -raw eks_cluster_name)"
-EKS_CLUSTER_OIDC_PROVIDER_ARN="$(terraform output -raw eks_cluster_oidc_provider_arn)"
-EKS_CLUSTER_OIDC_PROVIDER_URL="$(terraform output -raw eks_cluster_oidc_issuer_url)"
-VPC_ID="$(terraform output -raw vpc_id)"
-ECR_REPOSITORY_ARN="$(terraform output -raw ecr_repository_arn)"
-
 echo "==> Formatting current user's ARN"
 RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
 

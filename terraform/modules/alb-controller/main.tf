@@ -1,8 +1,8 @@
 data "aws_region" "current" {}
 
-resource "kubernetes_service_account" "aws_load_balancer_controller" {
+resource "kubernetes_service_account_v1" "this" {
   depends_on = [
-    aws_iam_role_policy_attachment.aws_load_balancer_controller
+    aws_iam_role_policy_attachment.controller
   ]
 
   metadata {
@@ -10,7 +10,7 @@ resource "kubernetes_service_account" "aws_load_balancer_controller" {
     namespace = var.namespace
 
     annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.aws_load_balancer_controller.arn
+      "eks.amazonaws.com/role-arn" = aws_iam_role.this.arn
     }
 
     labels = {
@@ -19,7 +19,7 @@ resource "kubernetes_service_account" "aws_load_balancer_controller" {
   }
 }
 
-resource "helm_release" "aws_load_balancer_controller" {
+resource "helm_release" "this" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
@@ -32,7 +32,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   timeout         = 600
 
   depends_on = [
-    kubernetes_service_account.aws_load_balancer_controller
+    kubernetes_service_account_v1.this
   ]
 
   values = [

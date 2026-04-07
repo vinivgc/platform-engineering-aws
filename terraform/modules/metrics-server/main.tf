@@ -1,9 +1,9 @@
-resource "helm_release" "metrics_server" {
+resource "helm_release" "this" {
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
   version    = var.chart_version
-  namespace  = "kube-system"
+  namespace  = var.namespace
 
   atomic          = true
   cleanup_on_fail = true
@@ -13,7 +13,7 @@ resource "helm_release" "metrics_server" {
   values = [
     yamlencode({
       replicas = var.replicas
-      args = var.args
+      args     = var.args
     })
   ]
 }

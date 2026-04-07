@@ -14,21 +14,19 @@ module "ecr" {
   project_name = var.project_name
 }
 
-module "eks_access" {
-  source = "../modules/eks-access"
-
-  project_name = var.project_name
-}
-
 module "eks_cluster" {
   source = "../modules/eks-cluster"
 
-  project_name         = var.project_name
-  public_subnet_ids    = module.networking.public_subnet_ids
-  private_subnet_ids   = module.networking.private_subnet_ids
-  role_eks_cluster_arn = module.eks_access.role_cluster_arn
-  role_eks_nodes_arn   = module.eks_access.role_nodes_arn
+  project_name                = var.project_name
+  public_subnet_ids           = module.networking.public_subnet_ids
+  private_subnet_ids          = module.networking.private_subnet_ids
   cluster_admin_principal_arn = var.cluster_admin_principal_arn
 
-  depends_on = [module.eks_access]
+  cluster_version     = "1.33"
+  node_instance_types = ["t3.medium"]
+  node_capacity_type  = "ON_DEMAND"
+  node_desired_size   = 2
+  node_min_size       = 1
+  node_max_size       = 3
+  node_disk_size      = 20
 }

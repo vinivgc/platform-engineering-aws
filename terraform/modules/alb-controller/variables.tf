@@ -23,19 +23,9 @@ variable "vpc_id" {
   description = "ID of the VPC where the EKS cluster is deployed"
 }
 
-variable "role_name" {
-  type        = string
-  description = "IAM role name for AWS Load Balancer Controller"
-}
-
 variable "chart_version" {
   type        = string
   description = "AWS Load Balancer Controller Helm chart version"
-}
-
-variable "controller_version" {
-  type        = string
-  description = "Controller version for IAM policy"
 }
 
 variable "namespace" {

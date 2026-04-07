@@ -1,4 +1,4 @@
-data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
+data "aws_iam_policy_document" "assume_role" {
   statement {
     sid     = "AllowAssumeRoleWithWebIdentity"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
   }
 }
 
-resource "aws_iam_policy" "aws_load_balancer_controller" {
+resource "aws_iam_policy" "controller" {
   name   = "${var.project_name}-aws-load-balancer-controller-policy"
   policy = file(local.iam_policy_path)
 
@@ -31,16 +31,16 @@ resource "aws_iam_policy" "aws_load_balancer_controller" {
   }
 }
 
-resource "aws_iam_role" "aws_load_balancer_controller" {
-  name               = var.role_name
-  assume_role_policy = data.aws_iam_policy_document.aws_load_balancer_controller_assume_role.json
+resource "aws_iam_role" "this" {
+  name               = "${var.project_name}-aws-load-balancer-controller-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
   tags = {
-    Name = var.role_name
+    Name = "${var.project_name}-aws-load-balancer-controller-role"
   }
 }
 
-resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
-  role       = aws_iam_role.aws_load_balancer_controller.name
-  policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
+resource "aws_iam_role_policy_attachment" "controller" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.controller.arn
 }

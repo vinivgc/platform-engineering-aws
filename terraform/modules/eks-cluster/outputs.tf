@@ -13,6 +13,16 @@ output "cluster_endpoint" {
   description = "Endpoint of the EKS cluster"
 }
 
+output "cluster_iam_role_arn" {
+  value       = aws_iam_role.eks_cluster.arn
+  description = "ARN of the IAM role used by the EKS control plane"
+}
+
+output "node_iam_role_arn" {
+  value       = aws_iam_role.eks_nodes.arn
+  description = "ARN of the IAM role used by the EKS managed node group"
+}
+
 output "cluster_oidc_provider_arn" {
   description = "ARN of the IAM OIDC provider associated with the EKS cluster"
   value       = aws_iam_openid_connect_provider.eks.arn

@@ -1208,3 +1208,122 @@ For this project, the main value is showing sound platform engineering structure
 
 **Reason:**
 The project is intended to highlight platform architecture, EKS addon integration, and how the platform serves developers. Using the recommended policy keeps the implementation clear, while still leaving room to explain that production hardening could further scope permissions down if needed.
+
+
+
+
+
+
+
+
+### Merge EKS IAM role creation into the EKS cluster module
+
+**Decision:** Move EKS control plane and node group IAM role creation into the `eks-cluster` module instead of keeping a separate `eks-access` module.
+
+**Reason:**
+The IAM roles for the EKS cluster and managed nodes are foundational cluster plumbing, not a separate access capability. Keeping them inside `eks-cluster` makes the module boundary clearer, simplifies the root stack, and avoids misleading naming.
+
+### Keep Terraform module granularity focused on platform capabilities
+
+**Decision:** Keep modules aligned to clear platform capabilities such as `networking`, `ecr`, `eks-cluster`, `github-oidc-provider`, `github-ecr-access`, `github-eks-access`, `alb-controller`, and `metrics-server`, and avoid splitting them into smaller modules without a strong readability benefit.
+
+**Reason:**
+The goal of the project is to highlight platform engineering judgment, not maximum module granularity. Capability-based modules are easier to explain in interviews, keep the codebase readable, and avoid turning the project into a Terraform abstraction exercise.
+
+### Keep GitHub ECR and EKS access as separate modules
+
+**Decision:** Use separate modules for GitHub access to ECR and GitHub access to EKS instead of merging them into one generic GitHub IAM module.
+
+**Reason:**
+These represent different trust and permission boundaries: one for image publishing and one for cluster deployment. Keeping them separate makes the delivery model clearer and shows deliberate platform access design.
+
+### Keep the GitHub OIDC provider as a shared standalone module
+
+**Decision:** Manage the GitHub OIDC provider in its own module and reuse it from the GitHub access modules.
+
+**Reason:**
+The OIDC provider is a shared trust anchor, not a permission set tied to one workflow. Keeping it separate makes the design clearer and avoids duplicating identity foundation logic.
+
+### Keep cluster add-ons modular but not over-split
+
+**Decision:** Keep `alb-controller` and `metrics-server` as separate add-on modules, but do not split them further into separate IAM-only and Helm-only modules.
+
+**Reason:**
+These add-ons are distinct platform capabilities, but splitting each into smaller submodules would add indirection without making the platform design stronger. A single module per add-on keeps the code simpler and easier to review.
+
+### Standardize module interfaces around explicit public inputs and outputs
+
+**Decision:** Standardize equivalent module inputs and outputs using consistent names such as `github_actions_oidc_provider_arn` and `iam_role_arn`.
+
+**Reason:**
+Consistent module interfaces make the codebase easier to navigate, reduce confusion between similar modules, and make the overall design look intentional rather than incrementally assembled.
+
+### Use shorter internal Terraform object names where the module already provides context
+
+**Decision:** Prefer concise internal names such as `assume_role`, `this`, `eks_access`, and `cluster_admin` for resources, data sources, and locals inside small modules, while keeping explicit names in modules that manage multiple similar resources.
+
+**Reason:**
+The module name already provides context. Shorter internal names reduce repetition and improve scanability, while explicit names remain useful in modules like `eks-cluster` and `networking` where multiple parallel resources exist.
+
+### Remove dead Terraform variables instead of exposing unused configurability
+
+**Decision:** Remove module and root variables that do not control real behavior, such as the unused ALB controller version input.
+
+**Reason:**
+Unused variables create the impression of configurability without actually affecting infrastructure behavior. This makes modules harder to trust and understand, especially in an interview setting.
+
+### Use chart-specific version inputs instead of ambiguous version variables
+
+**Decision:** When exposing a version for Helm-managed add-ons, use a precise name such as `chart_version` rather than a generic name like `controller_version`.
+
+**Reason:**
+A precise name makes it clear what is actually being versioned and avoids ambiguity between chart version, application version, IAM policy version, or module version.
+
+### Keep provider configuration at the root and avoid passing unnecessary environment context into modules
+
+**Decision:** Configure providers in root stacks and only pass module inputs that represent meaningful infrastructure choices, avoiding unnecessary variables such as passing `aws_region` when the module already reads it internally or does not need it.
+
+**Reason:**
+This keeps module interfaces smaller, reduces duplication, and makes the distinction between execution context and infrastructure configuration clearer.
+
+### Use explicit cluster and node defaults as part of the EKS module interface
+
+**Decision:** Keep a small set of meaningful EKS settings explicit, such as cluster version, node instance types, node capacity type, and node scaling values.
+
+**Reason:**
+These are real platform decisions and useful interview talking points. Making them explicit improves clarity without overengineering the module.
+
+### Derive names internally for platform-owned resources by default
+
+**Decision:** For platform-owned resources such as internal IAM roles and repositories, derive names inside modules from `project_name` unless there is a strong reason to make the full name an input.
+
+**Reason:**
+This keeps module interfaces simpler and makes naming more consistent across foundational platform resources.
+
+### Allow explicit role names only for external integration boundaries
+
+**Decision:** Allow explicit `role_name` inputs for external integration modules such as `github-ecr-access` and `github-eks-access`, while preferring internally derived names for platform-owned roles.
+
+**Reason:**
+External integration roles are more likely to benefit from caller-controlled naming for clarity and future flexibility. Internal platform roles are easier to manage and standardize when named inside the module.
+
+### Keep networking as a single cohesive module
+
+**Decision:** Manage the VPC, subnets, routing, internet gateway, NAT gateway, and Kubernetes subnet tagging in one `networking` module instead of splitting them into smaller modules.
+
+**Reason:**
+These resources form one coherent networking capability. Keeping them together improves readability and avoids unnecessary abstraction.
+
+### Accept simple networking tradeoffs when they are deliberate and explainable
+
+**Decision:** Keep the networking design intentionally simple, including choices such as a single NAT gateway, and explain the tradeoff rather than abstracting around it.
+
+**Reason:**
+The project is intended to demonstrate sound judgment, not maximum enterprise completeness. A conscious simplicity tradeoff is easier to justify and discuss than added complexity with little platform value.
+
+### Keep subnet validation optional and avoid adding complexity without clear payoff
+
+**Decision:** Do not add extra Terraform validation for subnet list shape when the design assumption can be explained clearly and the added validation would make the code more complex than useful.
+
+**Reason:**
+Not every reasonable assumption needs to be enforced in code for a personal project. Avoiding low-value complexity keeps the implementation cleaner while still allowing the design choice to be discussed in interviews.

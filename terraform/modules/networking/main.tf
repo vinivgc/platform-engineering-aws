@@ -32,7 +32,7 @@ resource "aws_subnet" "public" {
     {
       Name = "${var.project_name}-public-${count.index + 1}"
     },
-    local.public_k8s_tags
+    local.public_subnet_kubernetes_tags
   )
 }
 
@@ -47,7 +47,7 @@ resource "aws_subnet" "private" {
     {
       Name = "${var.project_name}-private-${count.index + 1}"
     },
-    local.private_k8s_tags
+    local.private_subnet_kubernetes_tags
   )
 }
 

@@ -4,6 +4,12 @@ variable "chart_version" {
   default     = "3.13.0"
 }
 
+variable "namespace" {
+  type        = string
+  description = "Namespace where Metrics Server will be installed"
+  default     = "kube-system"
+}
+
 variable "replicas" {
   type        = number
   description = "Number of Metrics Server replicas"

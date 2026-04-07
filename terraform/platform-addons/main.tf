@@ -6,10 +6,8 @@ module "aws_load_balancer_controller" {
   eks_cluster_oidc_issuer_url   = var.eks_cluster_oidc_issuer_url
   eks_cluster_oidc_provider_arn = var.eks_cluster_oidc_provider_arn
   vpc_id                        = var.eks_cluster_vpc_id
-  role_name                     = var.aws_load_balancer_controller_role_name
 
-  chart_version      = var.aws_load_balancer_controller_chart_version
-  controller_version = var.aws_load_balancer_controller_version
+  chart_version = var.aws_load_balancer_controller_chart_version
 }
 
 module "metrics_server" {

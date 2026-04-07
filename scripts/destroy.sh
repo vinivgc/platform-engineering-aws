@@ -22,6 +22,17 @@ trap cleanup EXIT
 
 export AWS_PROFILE
 
+echo "==> Formatting current user's ARN"
+RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
+
+if [[ "$RAW_ARN" == *":assumed-role/"* ]]; then
+  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+  ROLE_NAME="$(echo "$RAW_ARN" | cut -d'/' -f2)"
+  CLUSTER_ADMIN_PRINCIPAL_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
+else
+  CLUSTER_ADMIN_PRINCIPAL_ARN="$RAW_ARN"
+fi
+
 echo "==> Reading platform outputs"
 cd "$PLATFORM_DIR"
 EKS_CLUSTER_NAME="$(terraform output -raw eks_cluster_name)"

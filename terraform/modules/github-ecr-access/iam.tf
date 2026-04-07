@@ -1,11 +1,11 @@
-data "aws_iam_policy_document" "github_actions_assume_role" {
+data "aws_iam_policy_document" "assume_role" {
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
       type        = "Federated"
-      identifiers = [var.github_oidc_provider_arn]
+      identifiers = [var.github_actions_oidc_provider_arn]
     }
 
     condition {
@@ -24,7 +24,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
   }
 }
 
-data "aws_iam_policy_document" "github_actions_ecr_push" {
+data "aws_iam_policy_document" "ecr_push" {
   statement {
     sid    = "AllowEcrAuthorization"
     effect = "Allow"
@@ -52,4 +52,19 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
       var.ecr_repository_arn
     ]
   }
+}
+
+resource "aws_iam_role" "this" {
+  name               = var.role_name
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_policy" "ecr_push" {
+  name   = "${var.project_name}-ecr-push-policy"
+  policy = data.aws_iam_policy_document.ecr_push.json
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_push" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.ecr_push.arn
 }

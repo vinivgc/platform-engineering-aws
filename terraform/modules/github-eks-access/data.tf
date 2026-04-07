@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-data "aws_iam_policy_document" "github_actions_assume_role" {
+data "aws_iam_policy_document" "assume_role" {
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
   }
 }
 
-data "aws_iam_policy_document" "github_actions_eks_access" {
+data "aws_iam_policy_document" "eks_access" {
   statement {
     sid    = "AllowDescribeEksCluster"
     effect = "Allow"

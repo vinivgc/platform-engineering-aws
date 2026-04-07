@@ -1,6 +1,6 @@
 variable "project_name" {
   type        = string
-  description = "Name of the Project"
+  description = "Name of the project"
 }
 
 variable "role_name" {
@@ -13,7 +13,7 @@ variable "ecr_repository_arn" {
   description = "ARN of the target ECR repository"
 }
 
-variable "github_oidc_provider_arn" {
+variable "github_actions_oidc_provider_arn" {
   type        = string
   description = "ARN of the GitHub Actions OIDC provider"
 }
