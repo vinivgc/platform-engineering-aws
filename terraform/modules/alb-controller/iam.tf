@@ -22,21 +22,21 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-resource "aws_iam_policy" "controller" {
-  name   = "${var.project_name}-aws-load-balancer-controller-policy"
-  policy = file(local.iam_policy_path)
-
-  tags = {
-    Name = "${var.project_name}-aws-load-balancer-controller-policy"
-  }
-}
-
 resource "aws_iam_role" "this" {
-  name               = "${var.project_name}-aws-load-balancer-controller-role"
+  name               = "${var.project_name}-aws-load-balancer-controller"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
   tags = {
-    Name = "${var.project_name}-aws-load-balancer-controller-role"
+    Name = "${var.project_name}-aws-load-balancer-controller"
+  }
+}
+
+resource "aws_iam_policy" "controller" {
+  name   = "${aws_iam_role.this.name}-policy"
+  policy = file(local.iam_policy_path)
+
+  tags = {
+    Name = "${aws_iam_role.this.name}-policy"
   }
 }
 

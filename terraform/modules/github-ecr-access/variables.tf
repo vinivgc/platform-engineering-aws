@@ -3,11 +3,6 @@ variable "project_name" {
   description = "Name of the project"
 }
 
-variable "role_name" {
-  type        = string
-  description = "IAM role name for GitHub Actions"
-}
-
 variable "ecr_repository_arn" {
   type        = string
   description = "ARN of the target ECR repository"

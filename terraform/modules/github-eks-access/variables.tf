@@ -1,3 +1,8 @@
+variable "project_name" {
+  type        = string
+  description = "Name of the project"
+}
+
 variable "eks_cluster_name" {
   type        = string
   description = "Name of the EKS cluster"
@@ -8,9 +13,9 @@ variable "github_actions_oidc_provider_arn" {
   description = "ARN of the GitHub Actions OIDC provider"
 }
 
-variable "github_branch" {
+variable "github_environment" {
   type        = string
-  description = "GitHub branch allowed to assume the role"
+  description = "GitHub environment allowed to assume this role"
 }
 
 variable "github_org" {
@@ -21,9 +26,4 @@ variable "github_org" {
 variable "github_repo" {
   type        = string
   description = "Name of the GitHub repository"
-}
-
-variable "role_name" {
-  type        = string
-  description = "IAM role name for GitHub Actions"
 }
