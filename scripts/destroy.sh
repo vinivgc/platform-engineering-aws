@@ -62,23 +62,6 @@ cd "$PLATFORM_ADDONS_DIR"
 terraform init
 terraform destroy -auto-approve
 
-echo "==> Writing generated tfvars for platform-addons access stack"
-cat > "$PLATFORM_ADDONS_AUTO_TFVARS" <<EOF
-{
-  "aws_region": "${AWS_REGION}",
-  "project_name": "${PROJECT_NAME}",
-  "eks_cluster_name": "${EKS_CLUSTER_NAME}",
-  "eks_cluster_oidc_provider_arn": "${EKS_CLUSTER_OIDC_PROVIDER_ARN}",
-  "eks_cluster_oidc_issuer_url": "${EKS_CLUSTER_OIDC_PROVIDER_URL}",
-  "eks_cluster_vpc_id": "${VPC_ID}"
-}
-EOF
-
-echo "==> Destroying platform-addons stack"
-cd "$PLATFORM_ADDONS_DIR"
-terraform init
-terraform destroy -auto-approve
-
 echo "==> Formatting current user's ARN"
 RAW_ARN="$(aws sts get-caller-identity --query Arn --output text)"
 
@@ -94,7 +77,7 @@ echo "==> Writing generated tfvars for platform stack"
 cat > "$PLATFORM_AUTO_TFVARS" <<EOF
 {
   "aws_region": "${AWS_REGION}",
-  "project_name": "${PROJECT_NAME}"
+  "project_name": "${PROJECT_NAME}",
   "cluster_admin_principal_arn": "${CLUSTER_ADMIN_PRINCIPAL_ARN}"
 }
 EOF
