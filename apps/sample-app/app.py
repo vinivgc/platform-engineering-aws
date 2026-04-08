@@ -2,7 +2,6 @@ import os
 import socket
 import time
 
-
 from flask import Flask, jsonify
 
 START_TIME = time.time()
