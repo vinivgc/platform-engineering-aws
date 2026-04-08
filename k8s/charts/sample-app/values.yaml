@@ -12,7 +12,10 @@ image:
 
 application:
   port: 5000
-  healthPath: /health
+  probes:
+    startupPath: /livez
+    livenessPath: /livez
+    readinessPath: /readyz
 
 # visibility defines wether app is reachable from the internet
 # internal   = not reachable
