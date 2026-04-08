@@ -4,6 +4,7 @@ import time
 
 from flask import Flask, jsonify
 
+
 START_TIME = time.time()
 
 def get_env(name: str, default: str) -> str:

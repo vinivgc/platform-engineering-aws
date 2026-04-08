@@ -23,5 +23,5 @@ spec:
               service:
                 name: {{ include "sample-app.fullname" $ }}
                 port:
-                  number: {{ .Values.application.port }}
+                  name: http
 {{- end }}
