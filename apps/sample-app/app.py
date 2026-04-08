@@ -1,9 +1,9 @@
 import os
 import socket
 import time
+import math
 
-from flask import Flask, jsonify
-
+from flask import Flask, jsonify, request
 
 START_TIME = time.time()
 
@@ -17,6 +17,7 @@ def create_app() -> Flask:
     app.config["APP_MESSAGE"] = get_env("APP_MESSAGE", "Hello from Platform Engineering Project 4 🚀")
     app.config["READINESS_DELAY_SECONDS"] = int(get_env("READINESS_DELAY_SECONDS", "0"))
     app.config["REQUIRE_MESSAGE"] = get_env("REQUIRE_MESSAGE", "false").lower() == "true"
+    app.config["ENABLE_STRESS_ENDPOINT"] = get_env("ENABLE_STRESS_ENDPOINT", "false").lower() == "true"
 
     @app.route("/")
     def hello():
@@ -59,6 +60,21 @@ def create_app() -> Flask:
             status="ready",
             uptimeSeconds=uptime_seconds,
         ), 200
+
+    if app.config["ENABLE_STRESS_ENDPOINT"]:
+        @app.route("/stressz")
+        def stressz():
+            seconds = float(request.args.get("seconds", "10"))
+            end = time.time() + seconds
+            x = 0.0001
+
+            while time.time() < end:
+                x = math.sqrt(x + 123.456)
+
+            return {
+                "status": "done",
+                "stressedForSeconds": seconds
+            }, 200
 
     return app
 

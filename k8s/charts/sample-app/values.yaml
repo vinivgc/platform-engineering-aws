@@ -71,3 +71,4 @@ config:
   appMessage: "Hello from Platform Engineering Project"
   readinessDelaySeconds: "0"
   requireMessage: "false"
+  enableStressEndpoint: "false"

@@ -27,3 +27,4 @@ config:
   appMessage: "Hello from production"
   readinessDelaySeconds: "3"
   requireMessage: "true"
+  enableStressEndpoint: "false"

@@ -9,3 +9,4 @@ data:
   APP_MESSAGE: {{ .Values.config.appMessage | quote }}
   READINESS_DELAY_SECONDS: {{ .Values.config.readinessDelaySeconds | quote }}
   REQUIRE_MESSAGE: {{ .Values.config.requireMessage | quote }}
+  ENABLE_STRESS_ENDPOINT: {{ .Values.config.enableStressEndpoint | quote }}

@@ -14,3 +14,4 @@ config:
   appMessage: "Hello from dev"
   readinessDelaySeconds: "5"
   requireMessage: "true"
+  enableStressEndpoint: "true"
