@@ -18,14 +18,14 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .Values.scaling.targetCPUUtilizationPercentage }}
-    {{- if .Values.scaling.targetMemoryUtilizationPercentage }}
+          averageUtilization: {{ .Values.scaling.targetCPUUtilization }}
+    {{- if .Values.scaling.targetMemoryUtilization }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: {{ .Values.scaling.targetMemoryUtilizationPercentage }}
+          averageUtilization: {{ .Values.scaling.targetMemoryUtilization }}
     {{- end }}
   behavior:
     scaleUp:
