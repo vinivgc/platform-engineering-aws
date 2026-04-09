@@ -2,242 +2,80 @@
 
 ## Overview
 
-This project demonstrates a **platform engineering approach** to deploying applications on AWS using:
+This repository is a portfolio project built to demonstrate a practical **platform engineering approach** on AWS.
 
-* Terraform (Infrastructure as Code)
-* Amazon EKS (Kubernetes)
-* Docker + ECR (Containerization)
-* GitHub Actions (CI/CD)
-* Helm (Kubernetes deployment abstraction)
+It combines:
 
----
+- **Terraform** for infrastructure provisioning
+- **Amazon EKS** for Kubernetes runtime
+- **Amazon ECR** for container image storage
+- **GitHub Actions** for CI/CD
+- **Helm** for standardized application deployment
 
-## 🚀 Architecture
+The project is intentionally scoped to be realistic enough for interviews and learning, while still small enough to understand, explain, and maintain.
 
-* Infrastructure is provisioned using Terraform
-* Applications are containerized and pushed to ECR
-* Deployments are standardized using Helm
-* CI/CD automates build and deployment
-* Kubernetes runs the application on EKS
+## Why this project exists
 
----
+I built this repository as part of my transition into platform engineering.
 
+The goal is not only to show that I can use individual tools, but that I can structure them into a coherent platform with clear boundaries between infrastructure, access, cluster capabilities, delivery workflows, and developer-facing deployment abstractions.
 
-## ⚙️ Setup
+This project is meant to serve three purposes:
 
-### Terraform Backend & Bootstrap
+- a hands-on learning project
+- a portfolio project for interviews
+- a reference repository for platform engineering concepts and tradeoffs
 
-This project uses a **remote Terraform backend (S3 + DynamoDB)** for state management and locking.
+## What this project demonstrates
 
-Because Terraform cannot use a backend that does not yet exist, the backend infrastructure was **bootstrapped in an initial one-time step**:
+This project demonstrates:
 
-1. Terraform was first run using **local state**
-2. The S3 bucket and DynamoDB lock table were created
-3. The Terraform state was then **migrated to the remote backend**
-4. From that point on, all Terraform operations use the remote backend
+- Terraform-managed AWS platform provisioning
+- an EKS-based runtime environment
+- an ECR-based container artifact flow
+- GitHub OIDC-based AWS authentication for CI/CD
+- separation between CI image publishing and CD cluster deployment access
+- Helm as the application deployment contract
+- automatic deployment to `dev`
+- manual promotion to `prod`
+- platform-style abstractions for scaling, availability, security, and ingress
 
-> ℹ️ The backend resources are already created in this project, so the repository is currently configured to use the remote backend directly.
+## High-level solution summary
 
-#### Running this project from scratch
+At a high level, the platform works like this:
 
-If you were to run this project in a new AWS account, you would need to:
+- Terraform provisions the AWS foundation and supporting platform components
+- GitHub Actions builds the sample application container image
+- CI pushes the image to Amazon ECR
+- CD deploys the image to Amazon EKS with Helm
+- The application is exposed through Kubernetes Ingress using AWS Load Balancer Controller
 
-- temporarily switch the `bootstrap` stack to a **local backend**, or
-- manually create the S3 bucket and DynamoDB table before running `terraform init`
+The result is a small but complete path from source code to running workload, with clear separation between provisioning, delivery, and runtime concerns.
 
----
+## Repository map
 
-## 🔁 End-to-End Flow
+Key parts of the repository:
 
-1. Developer pushes code
-2. CI builds Docker image and pushes to ECR
-3. CD deploys using Helm to EKS
-4. Application is exposed via AWS LoadBalancer
+    .github/workflows/                 CI/CD workflows
+    apps/sample-app/                   Sample application
+    k8s/charts/sample-app/             Reusable Helm chart
+    k8s/values/sample-app/             Environment-specific values
+    scripts/                           Terraform orchestration scripts
+    terraform/bootstrap/               Remote state bootstrap
+    terraform/platform/                Core platform infrastructure
+    terraform/platform-access/         GitHub Actions access and IAM
+    terraform/platform-addons/         Cluster add-ons
+    terraform/modules/                 Reusable Terraform modules
+    docs/                              Supporting project documentation
 
----
+## Documentation guide
 
-## 🧱 Architecture Diagram
+Additional project documentation lives under `docs/`:
 
-> Rendered using Mermaid (see `/docs/diagram.md`)
+- `docs/architecture.md` — how the platform is structured and why
+- `docs/deployment.md` — how software moves from source code to `dev` and `prod`
+- `docs/self-service.md` — the developer-facing platform contract
+- `docs/decisions.md` — key engineering decisions and rationale
+- `docs/roadmap.md` — current priorities and intentionally deferred areas
 
-```
-Developer → CI → ECR → CD → Helm → EKS → LoadBalancer → User
-```
-
----
-
-## ⚙️ Technologies Used
-
-* AWS (EKS, ECR, IAM)
-* Terraform
-* Kubernetes
-* Helm
-* Docker
-* GitHub Actions
-* Python (Flask)
-
----
-
-## 🧪 Sample Application
-
-A simple Flask app:
-
-* `/` → returns greeting
-* `/health` → used for readiness/liveness probes
-
----
-
-## 🛠️ Deployment Model
-
-### CI (Build)
-
-* Builds Docker image
-* Tags image with commit SHA
-* Pushes to ECR
-
-### CD (Deploy)
-
-* Triggered after CI success
-* Deploys using Helm:
-
-```
-helm upgrade --install sample-app \
-  k8s/charts/sample-app \
-  --namespace dev \
-  --set image.tag=sha-xxxxxxx
-```
-
----
-
-## 🧠 Platform Design Principles
-
-### 1. Separation of Concerns
-
-| Layer     | Responsibility        |
-| --------- | --------------------- |
-| Terraform | Infrastructure        |
-| CI        | Build & push          |
-| Helm      | Deployment definition |
-| CD        | Deployment execution  |
-
----
-
-### 2. Immutable Deployments
-
-* Images tagged with commit SHA
-* No reliance on `latest`
-
----
-
-### 3. Abstraction over Kubernetes
-
-Instead of exposing raw Kubernetes fields:
-
-```yaml
-nodeSelector
-tolerations
-affinity
-```
-
-The platform exposes:
-
-```yaml
-workloadProfile: general
-exposure.type: public
-```
-
----
-
-### 4. Idempotent Deployments
-
-```
-helm upgrade --install
-```
-
-Ensures safe re-deployments.
-
----
-
-### Terraform Stack Orchestration
-
-This project keeps Terraform root stacks independent and composes them through shell scripts.
-
-- Shared inputs such as `aws_region` and `project_name` are passed into each stack through generated `terraform.auto.tfvars.json` files
-- The `platform` stack exports outputs such as `cluster_name` and `ecr_repository_arn`
-- The orchestration script reads those outputs and passes them into the `platform-access/github-actions` stack
-
-This keeps stack boundaries explicit while still allowing the repository to manage the full end-to-end workflow.
-
----
-
-### GitHub Actions
-
-#### GitHub Repository Variables
-
-Shared platform configuration is stored as repository-level variables:
-
-* AWS region
-* IAM role ARN
-* EKS cluster name
-* ECR repository name
-* Chart path and app path
-
-These values originate from Terraform but are **intentionally decoupled** from runtime pipelines.
-
-CI/CD pipelines do not depend on Terraform state.
-
-#### GitHub Environments
-
-Environment-specific configuration is handled via:
-
-dev
-prod
-
-Each environment defines:
-
-Kubernetes namespace
-
-This enables:
-
-Clear environment separation
-Future support for approvals (e.g., production gating)
-Environment-specific configuration without duplicating workflows
-
-## 🌍 Environment
-
-* Cluster: EKS
-* Exposure: LoadBalancer
-
----
-
-## 📈 Future Improvements
-
-* Ingress/Gateway API instead of LoadBalancer
-* Autoscaling (HPA)
-* Observability (metrics/logging)
-* Secrets management
-* Add approval gates for production environment
-* Introduce per-developer namespaces (preview environments)
-* Sync Terraform outputs automatically to GitHub variables
-* Add observability (logs/metrics)
-
----
-
-## 🎯 Goal of the Project
-
-To demonstrate:
-
-* Real-world platform engineering practices
-* Infrastructure + CI/CD integration
-* Kubernetes abstraction for developers
-* Clean, reproducible deployments
-
----
-
-## 📬 Result
-
-A fully working pipeline:
-
-```
-commit → build → push → deploy → running app on EKS
-```
+The README is intentionally brief; the detailed design, delivery, and platform contract live in the documents under `docs/`.

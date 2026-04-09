@@ -1,286 +1,200 @@
-# Self-Service Contract
+# Self-Service
 
-## What the Platform Provides
+## Overview
 
-The platform provides:
+This document describes the developer-facing contract of the platform.
 
-* AWS infrastructure provisioned with Terraform
-* An EKS cluster to run workloads
-* An ECR repository for container images
-* CI to build and publish images
-* Helm-based deployment templates
-* CD workflows to deploy to Kubernetes
+In this project, self-service does not mean a portal or a complex internal product. It means that a developer can consume the platform through a small, predictable set of inputs without needing to understand EKS internals, write raw Kubernetes manifests, or manually perform deployment steps every time.
 
----
+The platform provides the paved road. The developer uses it.
 
-## What the Developer Does
+## What the platform provides
 
-The developer workflow is intentionally simple:
+From a developer point of view, the platform provides:
 
-1. Change application code in:
+- a pre-provisioned Kubernetes runtime on AWS
+- a container registry for published application images
+- CI/CD workflows that build and deploy application versions
+- a reusable Helm chart for workload deployment
+- built-in support for ingress and autoscaling prerequisites
+- environment-specific deployment paths for `dev` and `prod`
 
-```text
-apps/sample-app/
-```
+The main benefit is that the developer does not need to set up the infrastructure, delivery access, or core deployment mechanics for each application change.
 
-2. Ensure the application:
+## What the developer does
 
-* listens on the expected port
-* exposes a health endpoint
+The developer workflow is intentionally small.
 
-3. Open a pull request
+A developer is expected to:
 
-4. Merge to `main`
+- change application code in `apps/sample-app/`
+- keep the application compatible with the platform contract
+- rely on CI to validate and publish the application image
+- rely on CD to deploy the image through Helm
+- use the supported configuration inputs rather than writing raw deployment manifests
+- promote a known immutable image to `prod` when needed
 
-After merge:
+The goal is that application work stays focused on the application, while the platform handles the surrounding delivery and runtime concerns.
 
-* CI builds a new immutable image
-* CD deploys that image automatically to `dev`
+## Developer contract
 
-If production deployment is needed:
+### Application runtime contract
 
-* run the manual production deployment workflow
-* provide the desired image tag
+The application must be able to run in a container and listen on the configured runtime port.
 
----
+In the current sample project, that means:
 
-## What the Developer Must Provide
+- the application listens on port `5000`
+- the container starts successfully under Kubernetes
+- the runtime can receive configuration through environment variables
 
-The application must follow a small contract.
+### Health endpoint contract
 
-### Application requirements
+The platform expects the application to expose health endpoints suitable for Kubernetes probes.
 
-The application must:
+In the current sample app, those are:
 
-* run in a container
-* listen on the configured application port
-* expose a health endpoint for Kubernetes probes
+- `/livez`
+- `/readyz`
 
-For the current sample app, that means:
+These endpoints are used by the platform to support liveness, startup, and readiness behavior.
 
-* port: `5000`
-* health endpoint: `/health`
+### Container contract
 
----
+The application must be buildable into a Docker image by CI.
 
-## What the Developer Does Not Need To Do
+That means the repository must contain:
 
-Developers do not need to:
+- a buildable application path
+- a valid Dockerfile and build context
+- application behavior that works correctly when run inside the container
 
-* write Kubernetes Deployment YAML
-* write Kubernetes Service YAML
-* run Helm manually
-* run `kubectl`
-* manage namespaces
-* interact with AWS directly
-* understand node selectors, tolerations, or affinity rules
+### Configuration contract
 
-Those concerns are platform-owned.
+The application is expected to receive configuration through environment variables supplied by the platform.
 
----
+The current sample app supports configuration such as:
 
-## Deployment Model
+- environment name
+- application message
+- readiness delay
+- whether a message is required for readiness
+- whether the stress endpoint is enabled
 
-### Development deployment
+This is an important part of the self-service model because it keeps configuration external to the container image.
 
-Development deployment is automatic.
+## Supported deployment inputs
 
-Flow:
+The platform does not expect the developer to edit raw Kubernetes manifests directly. Instead, it exposes a smaller set of deployment inputs through Helm values.
 
-1. Code is merged to `main`
-2. CI builds the image
-3. CI pushes the image to ECR using an immutable tag:
+### Image version
 
-   ```text
-   sha-<commit>
-   ```
-4. CD deploys the image to the `dev` namespace using Helm
+The image version is selected by the deployment workflow through an immutable tag of the form:
 
-This gives fast feedback and continuous delivery to development.
+`sha-<short-commit>`
 
----
+Developers do not need to manage Kubernetes image updates by hand.
 
-### Production deployment
+### Configuration values
 
-Production deployment is manual.
+Application configuration is provided through the chart values under `config`.
 
-Flow:
+Examples include:
 
-1. A previously built image tag is selected
-2. The manual production deployment workflow is triggered
-3. The selected immutable image is deployed to `prod`
+- `appEnv`
+- `appMessage`
+- `readinessDelaySeconds`
+- `requireMessage`
+- `enableStressEndpoint`
 
-This gives a controlled promotion model:
+### Scaling inputs
 
-* build once
-* deploy to dev
-* promote the same artifact to prod
+Scaling is controlled through the `scaling` section.
 
----
+The chart supports inputs such as:
 
-## Supported Platform Inputs
+- whether scaling is enabled
+- minimum replicas
+- maximum replicas
+- target CPU utilization
+- scaling profile
 
-The platform exposes a simplified deployment interface instead of raw Kubernetes configuration.
+### Ingress inputs
 
-Examples of supported inputs include:
+Exposure is controlled through the `ingress` section.
 
-```yaml
-deployment:
-  replicas: 2
+The chart supports inputs such as:
 
-application:
-  port: 5000
-  healthPath: /health
+- whether ingress is enabled
+- host
+- path
+- visibility
 
-exposure:
-  type: public
+### Availability inputs
 
-workloadProfile: general
+Availability is controlled through the `availability` section.
 
-env:
-  - name: APP_ENV
-    value: dev
-```
+This allows the platform to apply PodDisruptionBudget behavior through a simpler intent-based input rather than requiring every workload to define that logic directly.
 
----
+## Platform-owned concerns
 
-## Platform Abstractions
+The platform owns concerns that should not need to be re-implemented by the developer for each application.
 
-### Exposure type
+These include:
 
-Developers use:
+- cluster provisioning
+- AWS identity and access for CI/CD
+- ECR registry integration
+- kubeconfig setup inside workflows
+- Helm-based deployment execution
+- ingress controller installation
+- metrics server installation
+- default probe wiring
+- standard deployment patterns such as rollout-based updates
 
-```yaml
-exposure:
-  type: public
-```
+This is one of the core platform engineering ideas demonstrated by the project: repeated operational concerns should be handled centrally, not rebuilt per application.
 
-The platform translates that into the correct Kubernetes Service behavior.
+## Current self-service flow
 
-Examples:
+The current developer-facing flow is:
 
-* `internal` → internal service
-* `public` → externally reachable service
+- change application code
+- open a pull request to validate the build
+- merge to `main`
+- let CI build and publish the image
+- let dev CD deploy automatically
+- manually promote an immutable image tag to `prod` when desired
 
----
+This creates a simple paved road:
 
-### Workload profile
+- developers focus on app changes
+- the platform handles artifact publication and deployment
+- production remains an explicit promotion step
 
-Developers use:
+## Scope and limits
 
-```yaml
-workloadProfile: general
-```
+The current self-service model is intentionally limited.
 
-The platform translates that into runtime defaults such as:
+It currently supports:
 
-* CPU and memory requests
-* CPU and memory limits
-* future scheduling behavior if expanded later
+- one sample application
+- one reusable deployment chart
+- `dev` and `prod` deployment paths
+- configuration-driven deployment behavior
+- ingress, scaling, and availability settings through values
 
-Developers do not need to choose raw Kubernetes resource settings directly.
+It does not yet provide:
 
----
+- a self-service onboarding flow for many teams
+- per-developer preview environments
+- secrets self-service
+- policy-driven multi-tenant isolation
+- application templates or golden paths for many workload types
 
-## Platform-Owned Concerns
-
-The following are intentionally hidden behind the platform:
-
-* Helm chart structure
-* Kubernetes templates
-* Service type implementation details
-* rolling update strategy
-* liveness and readiness probe wiring
-* namespace handling
-* cluster authentication
-* EKS access configuration
-* low-level scheduling controls
-
-This is intentional. The platform should expose intent, not infrastructure complexity.
-
----
-
-## Current Environment Model
-
-The current project supports:
-
-* automatic deployment to `dev`
-* manual promotion to `prod`
-
-Namespace is used as the environment boundary.
-
-Examples:
-
-* `dev`
-* `prod`
-
----
-
-## Artifact Model
-
-Images are tagged with immutable commit-based tags:
-
-```text
-sha-<short-commit>
-```
-
-This means:
-
-* every deployment is traceable
-* the deployed version is explicit
-* production can promote a known artifact
-* rollback is easier
-
-The `latest` tag may exist for convenience, but it is not used as the deployment source of truth.
-
----
-
-## What This Demonstrates
-
-This self-service model demonstrates the platform engineering idea that:
-
-* developers focus on application code
-* the platform standardizes delivery
-* deployment is automated and repeatable
-* Kubernetes complexity is abstracted away
-
----
-
-## Current Scope
-
-This project currently focuses on:
-
-* one sample application
-* one shared deployment model
-* automatic deployment to `dev`
-* manual promotion to `prod`
-
-This is enough to demonstrate a credible platform-style workflow without overcomplicating the project.
-
----
-
-## Future Extensions
-
-Possible future improvements include:
-
-* application-facing config outside the Kubernetes folder
-* preview environments per branch
-* gateway API/ingress-based routing
-* autoscaling
-* observability and monitoring
-
-These are valid extensions, but they are not required for the current self-service contract to be meaningful.
-
----
+Those are valid future extensions, but they are outside the scope of the current project.
 
 ## Summary
 
-The self-service contract is:
+In this repository, self-service means that the platform reduces the number of things a developer needs to know in order to get an application deployed.
 
-* developers change application code
-* CI builds immutable artifacts
-* the platform deploys automatically to `dev`
-* production uses controlled manual promotion
-* deployment complexity stays owned by the platform
-
-This keeps the developer experience simple while preserving standardization, traceability, and operational control.
+The developer does not need to manage cluster provisioning, AWS authentication, Helm execution, ingress controller installation, or raw Kubernetes deployment design. The platform handles those concerns and exposes a smaller, cleaner deployment contract through CI/CD and Helm values.
